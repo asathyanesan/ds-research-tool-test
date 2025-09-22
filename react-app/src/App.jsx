@@ -93,19 +93,14 @@ function App() {
     }
 
     try {
-      const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+      const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-small', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          inputs: `DS research question: ${prompt}`,
-          parameters: {
-            max_new_tokens: 150,
-            temperature: 0.7,
-            do_sample: true
-          }
+          inputs: prompt
         })
       });
 
@@ -115,12 +110,17 @@ function App() {
 
       const data = await response.json();
       
+      // Handle different response formats
       if (data.generated_text) {
-        return data.generated_text.replace(`DS research question: ${prompt}`, '').trim();
-      } else if (data[0]?.generated_text) {
-        return data[0].generated_text.replace(`DS research question: ${prompt}`, '').trim();
+        return data.generated_text.trim();
+      } else if (Array.isArray(data) && data[0]?.generated_text) {
+        return data[0].generated_text.trim();
+      } else if (Array.isArray(data) && data[0]?.label) {
+        // Classification response format
+        return `Classification result: ${data[0].label} (confidence: ${(data[0].score * 100).toFixed(1)}%)`;
       }
       
+      console.log('Unexpected response format:', data);
       return null;
     } catch (error) {
       console.error('HuggingFace API error:', error);
