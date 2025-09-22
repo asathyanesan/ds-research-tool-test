@@ -135,22 +135,7 @@ function App() {
       
       if (data.choices && data.choices[0]?.message?.content) {
         let content = data.choices[0].message.content.trim();
-        
-        // Aggressive filtering for Deepseek's thinking process
-        content = content.replace(/<think>[\s\S]*?<\/think>/g, '');
-        content = content.replace(/^\s*<think>[\s\S]*$/g, ''); // If entire response is thinking
-        content = content.replace(/^.*thinking.*$/gmi, ''); // Remove lines about thinking
-        content = content.replace(/^.*I think.*$/gmi, ''); // Remove "I think" lines
-        content = content.replace(/^.*I'm.*$/gmi, ''); // Remove "I'm" lines
-        content = content.replace(/^.*Let me.*$/gmi, ''); // Remove "Let me" lines
-        content = content.trim();
-        
-        // If response is empty or too short after filtering, return null for fallback
-        if (!content || content.length < 20) {
-          console.log('Response filtered out due to thinking content');
-          return await callHuggingFaceAPI(prompt);
-        }
-        
+        // Show Groq response as-is, without aggressive filtering or length fallback
         return content;
       }
       
