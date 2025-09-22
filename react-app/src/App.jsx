@@ -112,15 +112,15 @@ function App() {
           messages: [
             {
               role: 'system',
-              content: 'You are a helpful data science research assistant. Provide clear, accurate, evidence-based answers about data science, machine learning, and research topics. Avoid speculation and focus on established facts and best practices.'
+              content: 'You are an expert data science and biomedical research assistant. Provide concise, authoritative answers based on established scientific literature. Use precise terminology and cite specific methodologies when relevant. Avoid speculation and focus on evidence-based information. Answer directly without showing reasoning steps.'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          max_tokens: 500,
-          temperature: 0.3  // Lower temperature for more focused, less creative responses
+          max_tokens: 800,
+          temperature: 0.1  // Very low temperature for authoritative, direct responses
         })
       });
 
@@ -134,7 +134,14 @@ function App() {
       console.log('Groq API response:', data);
       
       if (data.choices && data.choices[0]?.message?.content) {
-        return data.choices[0].message.content.trim();
+        let content = data.choices[0].message.content.trim();
+        
+        // Clean up Deepseek's thinking process if present
+        content = content.replace(/<think>[\s\S]*?<\/think>/g, '');
+        content = content.replace(/^\s*The .* model is.*?\n\n/g, ''); // Remove model intro lines
+        content = content.trim();
+        
+        return content;
       }
       
       console.log('Unexpected Groq response format:', data);
