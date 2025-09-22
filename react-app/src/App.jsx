@@ -83,7 +83,61 @@ function App() {
     { id: 10, category: 'Results', item: 'Present results with appropriate statistics', checked: false }
   ]);
 
-  // HuggingFace API integration
+  // Groq API integration (free tier with generous limits)
+  const callGroqAPI = async (prompt) => {
+    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+    
+    if (!apiKey) {
+      console.log('No Groq API key found, trying HuggingFace fallback');
+      return await callHuggingFaceAPI(prompt);
+    }
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama3-8b-8192',  // Free model
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful data science research assistant. Provide clear, accurate answers about data science, machine learning, and research topics.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 150,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Groq API Error ${response.status}:`, errorText);
+        return await callHuggingFaceAPI(prompt);  // Fallback to HuggingFace
+      }
+
+      const data = await response.json();
+      console.log('Groq API response:', data);
+      
+      if (data.choices && data.choices[0]?.message?.content) {
+        return data.choices[0].message.content.trim();
+      }
+      
+      console.log('Unexpected Groq response format:', data);
+      return await callHuggingFaceAPI(prompt);  // Fallback
+    } catch (error) {
+      console.error('Groq API error:', error);
+      return await callHuggingFaceAPI(prompt);  // Fallback
+    }
+  };
+
+  // HuggingFace API integration (fallback)
   const callHuggingFaceAPI = async (prompt) => {
     const apiKey = import.meta.env.VITE_HUGGINGFACE_API_KEY;
     
@@ -209,8 +263,8 @@ function App() {
     setChatInput('');
 
     try {
-      // Try HuggingFace API first
-      const aiResponse = await callHuggingFaceAPI(currentInput);
+      // Try Groq API first (free and fast), then fallback to HuggingFace
+      const aiResponse = await callGroqAPI(currentInput);
       
       let responseContent;
       let isAiResponse = false;
