@@ -23,13 +23,12 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: react-app/package-lock.json
 
-    - name: Install dependencies
+    - name: Clean install dependencies
       run: |
         cd react-app
-        npm ci
+        rm -rf node_modules package-lock.json
+        npm install
 
     - name: Build
       env:
