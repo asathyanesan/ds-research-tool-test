@@ -100,7 +100,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama3-8b-8192',  // Free model
+          model: 'llama-3.1-8b-instant',  // Current free model
           messages: [
             {
               role: 'system',
