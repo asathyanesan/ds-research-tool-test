@@ -92,60 +92,46 @@ function App() {
   ]);
 
   // Groq API integration (free tier with generous limits)
-  const callGroqAPI = async (prompt) => {
-    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-    
-    if (!apiKey) {
-      console.log('No Groq API key found, trying HuggingFace fallback');
-      return await callHuggingFaceAPI(prompt);
-    }
-
-    try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3-70b',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a scientific research assistant. Respond with factual, authoritative, and complete sentences. Provide thorough answers in 10-20 sentences, using scientific terminology and passive voice. Avoid first-person language and reasoning steps. Summarize findings as in a scientific review or textbook. Do not include phrases like "I think" or "I believe." If relevant, cite evidence or studies. End with: "Would you like more specific information on any aspect?"'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 900,
-          temperature: 0.2
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Groq API Error ${response.status}:`, errorText);
-        return await callHuggingFaceAPI(prompt);  // Fallback to HuggingFace
+  // Perplexity API integration
+    // Perplexity API integration (uses environment variable for credentials)
+    const callPerplexityAPI = async (prompt, messageHistory) => {
+      const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
+      if (!apiKey) {
+        console.log('No Perplexity API key found, trying HuggingFace fallback');
+        return await callHuggingFaceAPI(prompt);
       }
-
-      const data = await response.json();
-      console.log('Groq API response:', data);
-      
-      if (data.choices && data.choices[0]?.message?.content) {
-        let content = data.choices[0].message.content.trim();
-        // Show Groq response as-is, without aggressive filtering or length fallback
-        return content;
+      try {
+        const response = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'pplx-70b-online',
+            messages: messageHistory,
+            max_tokens: 900,
+            temperature: 0.2
+          })
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Perplexity API Error ${response.status}:`, errorText);
+          return await callHuggingFaceAPI(prompt);  // Fallback to HuggingFace
+        }
+        const data = await response.json();
+        console.log('Perplexity API response:', data);
+        if (data.choices && data.choices[0]?.message?.content) {
+          let content = data.choices[0].message.content.trim();
+          return content;
+        }
+        console.log('Unexpected Perplexity response format:', data);
+        return await callHuggingFaceAPI(prompt);  // Fallback
+      } catch (error) {
+        console.error('Perplexity API error:', error);
+        return await callHuggingFaceAPI(prompt);  // Fallback
       }
-      
-      console.log('Unexpected Groq response format:', data);
-      return await callHuggingFaceAPI(prompt);  // Fallback
-    } catch (error) {
-      console.error('Groq API error:', error);
-      return await callHuggingFaceAPI(prompt);  // Fallback
-    }
-  };
+    };
 
   // HuggingFace API integration (fallback)
   const callHuggingFaceAPI = async (prompt) => {
@@ -273,8 +259,8 @@ function App() {
     setChatInput('');
 
     try {
-      // Try Groq API first (free and fast), then fallback to HuggingFace
-      const aiResponse = await callGroqAPI(currentInput);
+  // Try Perplexity API first, then fallback to HuggingFace
+  const aiResponse = await callPerplexityAPI(currentInput);
       
       let responseContent;
       let isAiResponse = false;
