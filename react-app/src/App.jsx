@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download } from 'lucide-react';
 
 function App() {
@@ -8,6 +8,14 @@ function App() {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const chatContainerRef = useRef(null);
+
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages, isLoading]);
 
   // Animal models data - directly in component for simplicity
   const animalModels = [
@@ -111,7 +119,7 @@ function App() {
               content: prompt
             }
           ],
-          max_tokens: 150,
+          max_tokens: 300,
           temperature: 0.7
         })
       });
@@ -740,7 +748,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
             <div>
               <h2 className="text-2xl font-semibold mb-4">AI Research Assistant</h2>
               <div className="border rounded-lg h-96 flex flex-col">
-                <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                <div ref={chatContainerRef} className="flex-1 p-4 overflow-y-auto space-y-4">
                   {chatMessages.length === 0 ? (
                     <div className="text-center text-gray-500 mt-8">
                       <BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
