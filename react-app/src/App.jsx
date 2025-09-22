@@ -93,14 +93,19 @@ function App() {
     }
 
     try {
-      const response = await fetch('https://api-inference.huggingface.co/models/google/flan-t5-small', {
+      const response = await fetch('https://api-inference.huggingface.co/models/gpt2', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          inputs: `Answer this data science question: ${prompt}`
+          inputs: `Q: ${prompt}\nA:`,
+          parameters: {
+            max_new_tokens: 100,
+            temperature: 0.7,
+            return_full_text: false
+          }
         })
       });
 
