@@ -93,22 +93,25 @@ function App() {
     }
 
     try {
-      const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-small', {
+      const response = await fetch('https://api-inference.huggingface.co/models/google/flan-t5-small', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          inputs: prompt
+          inputs: `Answer this data science question: ${prompt}`
         })
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`API Error ${response.status}:`, errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('HuggingFace API response:', data);
       
       // Handle different response formats
       if (data.generated_text) {
@@ -124,6 +127,8 @@ function App() {
       return null;
     } catch (error) {
       console.error('HuggingFace API error:', error);
+      console.error('API Key exists:', !!apiKey);
+      console.error('API Key starts with hf_:', apiKey?.startsWith('hf_'));
       return null;
     }
   };
