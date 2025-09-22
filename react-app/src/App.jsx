@@ -112,15 +112,15 @@ function App() {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert data science and biomedical research assistant. Provide concise, authoritative answers based on established scientific literature. Use precise terminology and cite specific methodologies when relevant. Avoid speculation and focus on evidence-based information. Answer directly without showing reasoning steps.'
+              content: 'You are a scientific research assistant. Provide concise, factual responses in 2-3 sentences maximum. Use passive voice and objective terminology. Avoid first-person phrases like "I think" or "I believe." Use phrases like "research indicates," "studies demonstrate," or "evidence suggests." End responses with "Would you like more specific information on any aspect?" Keep responses brief and authoritative.'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          max_tokens: 800,
-          temperature: 0.1  // Very low temperature for authoritative, direct responses
+          max_tokens: 150,
+          temperature: 0.0  // Zero temperature for consistent, factual responses
         })
       });
 
@@ -136,10 +136,20 @@ function App() {
       if (data.choices && data.choices[0]?.message?.content) {
         let content = data.choices[0].message.content.trim();
         
-        // Clean up Deepseek's thinking process if present
+        // Aggressive filtering for Deepseek's thinking process
         content = content.replace(/<think>[\s\S]*?<\/think>/g, '');
-        content = content.replace(/^\s*The .* model is.*?\n\n/g, ''); // Remove model intro lines
+        content = content.replace(/^\s*<think>[\s\S]*$/g, ''); // If entire response is thinking
+        content = content.replace(/^.*thinking.*$/gmi, ''); // Remove lines about thinking
+        content = content.replace(/^.*I think.*$/gmi, ''); // Remove "I think" lines
+        content = content.replace(/^.*I'm.*$/gmi, ''); // Remove "I'm" lines
+        content = content.replace(/^.*Let me.*$/gmi, ''); // Remove "Let me" lines
         content = content.trim();
+        
+        // If response is empty or too short after filtering, return null for fallback
+        if (!content || content.length < 20) {
+          console.log('Response filtered out due to thinking content');
+          return await callHuggingFaceAPI(prompt);
+        }
         
         return content;
       }
