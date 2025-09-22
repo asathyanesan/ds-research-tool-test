@@ -108,19 +108,19 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',  // Current free model
+          model: 'deepseek-r1-distill-llama-70b',  // More accurate model with less hallucination
           messages: [
             {
               role: 'system',
-              content: 'You are a helpful data science research assistant. Provide clear, accurate answers about data science, machine learning, and research topics.'
+              content: 'You are a helpful data science research assistant. Provide clear, accurate, evidence-based answers about data science, machine learning, and research topics. Avoid speculation and focus on established facts and best practices.'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          max_tokens: 300,
-          temperature: 0.7
+          max_tokens: 500,
+          temperature: 0.3  // Lower temperature for more focused, less creative responses
         })
       });
 
