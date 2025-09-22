@@ -1,0 +1,77 @@
+[
+  {
+    "category": "Study Design",
+    "items": [
+      {
+        "id": "study_design_1",
+        "item": "For each experiment, provide precise details of study design including:",
+        "details": "- Primary research question and secondary questions\n- Key dependent and independent variables\n- Study timeline and duration\n- Experimental unit (individual animal, cage, litter)"
+      },
+      {
+        "id": "study_design_2", 
+        "item": "Explain how sample size was determined",
+        "details": "- Power analysis calculations\n- Effect size estimates\n- Alpha and beta levels\n- Reference to pilot data or literature"
+      }
+    ]
+  },
+  {
+    "category": "Animals",
+    "items": [
+      {
+        "id": "animals_1",
+        "item": "Provide details of animals used, including:",
+        "details": "- Species, strain, substrain\n- Sex and age/weight\n- Source and vendor\n- Health/microbiological status"
+      },
+      {
+        "id": "animals_2",
+        "item": "Explain housing and husbandry conditions",
+        "details": "- Housing system and environment\n- Diet and feeding schedule\n- Environmental enrichment\n- Social housing arrangements"
+      }
+    ]
+  },
+  {
+    "category": "Procedures", 
+    "items": [
+      {
+        "id": "procedures_1",
+        "item": "For each experimental group describe procedures in detail:",
+        "details": "- What, how, when, where procedures were carried out\n- Dosing regimens and administration routes\n- Anesthesia and analgesic protocols\n- Method of euthanasia"
+      },
+      {
+        "id": "procedures_2",
+        "item": "Describe experimental outcomes and how they were assessed",
+        "details": "- Primary and secondary outcome measures\n- Assessment methods and timing\n- Who assessed outcomes and whether blinded\n- Quality control measures"
+      }
+    ]
+  },
+  {
+    "category": "Statistical Analysis",
+    "items": [
+      {
+        "id": "stats_1",
+        "item": "Describe statistical methods for each analysis",
+        "details": "- Statistical tests used and rationale\n- Unit of analysis and experimental unit\n- How data were handled (transformations, outliers)\n- Multiple comparisons corrections"
+      },
+      {
+        "id": "stats_2",
+        "item": "Report exact P values and effect sizes where possible",
+        "details": "- Exact P values (not just <0.05)\n- Confidence intervals\n- Effect sizes with interpretation\n- Number of animals in each analysis"
+      }
+    ]
+  },
+  {
+    "category": "Results",
+    "items": [
+      {
+        "id": "results_1", 
+        "item": "Report study timeline and actual sample sizes",
+        "details": "- When study was performed\n- Number of animals in each group at each time point\n- Reasons for attrition or exclusion\n- Flow diagram if complex design"
+      },
+      {
+        "id": "results_2",
+        "item": "Present results for each analysis with appropriate statistics",
+        "details": "- Raw data or summary statistics\n- Variability measures (SD, SEM, CI)\n- Statistical test results\n- Biological as well as statistical significance"
+      }
+    ]
+  }
+]

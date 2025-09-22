@@ -1,0 +1,94 @@
+[
+  {
+    "id": "ts65dn",
+    "name": "Ts65Dn",
+    "species": "Mouse",
+    "background": "B6EiC3Sn",
+    "trisomy": "Partial (MMU16)",
+    "genes": "104 genes",
+    "phenotypes": ["Cognitive deficits", "Craniofacial abnormalities", "Heart defects", "Cerebellar hypoplasia"],
+    "advantages": ["Well-characterized", "Cognitive phenotype", "Available colonies", "Extensive literature"],
+    "limitations": ["Partial trisomy", "Extra genes from MMU17", "Fertility issues", "Not complete DS model"],
+    "applications": ["Cognitive studies", "Therapeutics testing", "Pathophysiology", "Behavioral analysis"],
+    "jackson_link": "https://www.jax.org/strain/001924",
+    "availability": "Commercial",
+    "references": ["PMC3174970", "PMC2921762", "PMC4104169"],
+    "key_papers": [
+      {
+        "title": "Ts65Dn mouse model for Down syndrome",
+        "authors": "Reeves et al.",
+        "year": "1995",
+        "pmid": "7493025"
+      }
+    ]
+  },
+  {
+    "id": "tc1",
+    "name": "Tc1",
+    "species": "Mouse",
+    "background": "Mixed",
+    "trisomy": "Complete HSA21",
+    "genes": "Most HSA21 genes",
+    "phenotypes": ["Learning deficits", "Synaptic dysfunction", "Neurodegeneration", "Memory impairment"],
+    "advantages": ["Complete human chr21", "Human-relevant genetics", "All DS genes present"],
+    "limitations": ["Poor breeding", "High mortality", "Genomic instability", "Limited availability"],
+    "applications": ["Genetic studies", "Molecular mechanisms", "Human relevance studies", "Gene dosage effects"],
+    "jackson_link": "https://www.jax.org/strain/004924",
+    "availability": "Research colonies only",
+    "references": ["PMC2921762", "PMC3174970"],
+    "key_papers": [
+      {
+        "title": "Tc1 mouse carrying a freely segregating human chromosome 21",
+        "authors": "O'Doherty et al.",
+        "year": "2005",
+        "pmid": "15958422"
+      }
+    ]
+  },
+  {
+    "id": "dp16",
+    "name": "Dp(16)1Yey",
+    "species": "Mouse",
+    "background": "C57BL/6J",
+    "trisomy": "Partial (MMU16)",
+    "genes": "33 genes",
+    "phenotypes": ["Motor deficits", "Hyperactivity", "Memory defects", "Interferon dysregulation"],
+    "advantages": ["Defined gene set", "Good breeding", "Interferon studies", "JAK pathway research"],
+    "limitations": ["Smaller gene set", "Limited cognitive phenotype", "Newer model"],
+    "applications": ["Interferon pathway", "Specific gene studies", "Immunotherapy", "JAK inhibitor studies"],
+    "jackson_link": "https://www.jax.org/strain/013530",
+    "availability": "Research colonies",
+    "references": ["PMC8217057", "PMC7492826"],
+    "key_papers": [
+      {
+        "title": "Dp(16)1Yey mouse model of Down syndrome",
+        "authors": "Yu et al.",
+        "year": "2010",
+        "pmid": "20890288"
+      }
+    ]
+  },
+  {
+    "id": "dp17",
+    "name": "Dp(17)1Yey",
+    "species": "Mouse", 
+    "background": "C57BL/6J",
+    "trisomy": "Partial (MMU17)",
+    "genes": "24 genes",
+    "phenotypes": ["Mild cognitive deficits", "Motor learning defects"],
+    "advantages": ["Smaller gene set", "Good breeding", "Controls for Ts65Dn"],
+    "limitations": ["Mild phenotype", "Limited applications"],
+    "applications": ["Control studies", "Gene mapping", "Complementation analysis"],
+    "jackson_link": "https://www.jax.org/strain/013529",
+    "availability": "Research colonies",
+    "references": ["PMC3174970"],
+    "key_papers": [
+      {
+        "title": "Segmental trisomy mouse models",
+        "authors": "Yu et al.", 
+        "year": "2010",
+        "pmid": "20890288"
+      }
+    ]
+  }
+]
