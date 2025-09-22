@@ -108,19 +108,19 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'deepseek-r1-distill-llama-70b',  // More accurate model with less hallucination
+          model: 'meta-llama/llama-3-8b-instruct',
           messages: [
             {
               role: 'system',
-              content: 'You are a scientific research assistant. Provide concise, factual responses in 2-3 sentences maximum. Use passive voice and objective terminology. Avoid first-person phrases like "I think" or "I believe." Use phrases like "research indicates," "studies demonstrate," or "evidence suggests." End responses with "Would you like more specific information on any aspect?" Keep responses brief and authoritative.'
+              content: 'You are a scientific research assistant. Respond with concise, factual, and authoritative answers in 2-3 sentences. Use scientific terminology and passive voice. Avoid first-person language and reasoning steps. Summarize findings as in a scientific abstract. Do not include phrases like "I think" or "I believe." If relevant, cite evidence or studies. End with: "Would you like more specific information on any aspect?"'
             },
             {
               role: 'user',
               content: prompt
             }
           ],
-          max_tokens: 150,
-          temperature: 0.0  // Zero temperature for consistent, factual responses
+          max_tokens: 180,
+          temperature: 0.2
         })
       });
 
