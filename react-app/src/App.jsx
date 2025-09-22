@@ -108,7 +108,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3-8b-instruct',
+          model: 'llama-3-70b-versatile',
           messages: [
             {
               role: 'system',
