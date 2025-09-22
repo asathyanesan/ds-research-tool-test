@@ -35,6 +35,8 @@ jobs:
         VITE_HUGGINGFACE_API_KEY: ${{ secrets.VITE_HUGGINGFACE_API_KEY }}
       run: |
         cd react-app
+        echo "Building with environment variables..."
+        echo "API key exists: $([[ -n "$VITE_HUGGINGFACE_API_KEY" ]] && echo "YES" || echo "NO")"
         npm run build
 
     - name: Setup Pages
