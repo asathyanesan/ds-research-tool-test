@@ -684,6 +684,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                               )}
                               {/* Render <think>...</think> as grey italic, rest as normal markdown */}
                               {(() => {
+                                // Enhanced <think> handling: render content between <think> and </think> as grey italic, ignore stray </think>
                                 const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>/i);
                                 if (thinkMatch) {
                                   const before = msg.content.slice(0, thinkMatch.index);
@@ -699,7 +700,9 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                                     </>
                                   );
                                 } else {
-                                  return <MarkdownMessage content={msg.content} />;
+                                  // If only </think> is present, ignore it
+                                  const cleaned = msg.content.replace(/<\/think>/gi, '');
+                                  return <MarkdownMessage content={cleaned} />;
                                 }
                               })()}
                             </div>
