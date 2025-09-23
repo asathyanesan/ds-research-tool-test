@@ -22,7 +22,7 @@ function App() {
   // Animal models data - directly in component for simplicity
   const animalModels = [
     {
-                        })}
+      // ...existing properties for previous models...
       rrid: 'IMSR_JAX:013530'
     },
     {
@@ -767,4 +767,5 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
   );
 }
 
+}
 export default App;
