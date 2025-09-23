@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download } from 'lucide-react';
-
-import MarkdownMessage from './MarkdownMessage';
-
 function App() {
   const [activeTab, setActiveTab] = useState('models');
   const [selectedModels, setSelectedModels] = useState([]);
@@ -11,37 +8,12 @@ function App() {
   const [chatMessages, setChatMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatContainerRef = useRef(null);
-
-  // Auto-scroll to bottom when new messages are added
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages, isLoading]);
-
-  // Animal models data - directly in component for simplicity
-  const animalModels = [
-    {
-      // ...existing properties for previous models...
-      rrid: 'IMSR_JAX:013530'
-    },
-    {
-      id: 'dp17',
-      name: 'Dp(17)1Yey',
-      species: 'Mouse', 
-      background: 'C57BL/6J',
-      trisomy: 'Partial (MMU17)',
-      genes: '24 genes',
-      phenotypes: ['Mild cognitive deficits', 'Motor learning defects'],
-      advantages: ['Smaller gene set', 'Good breeding', 'Controls for Ts65Dn'],
-      limitations: ['Mild phenotype', 'Limited applications'],
-      applications: ['Control studies', 'Gene mapping', 'Complementation analysis'],
-      jackson_link: 'https://www.jax.org/strain/013529',
-      rrid: 'IMSR_JAX:013529'
-    }
-  ];
-
-  // ARRIVE guidelines data - NOW IN STATE
+}
   const [guidelines, setGuidelines] = useState([
     { id: 1, category: 'Study Design', item: 'Provide precise details of study design including primary research question', checked: false },
     { id: 2, category: 'Study Design', item: 'Explain how sample size was determined', checked: false },
@@ -743,5 +715,5 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
   );
 }
 
-}
+
 export default App;
