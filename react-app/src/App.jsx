@@ -217,32 +217,8 @@ function App() {
     // Always build message history for context retention
     const updatedMessages = chatMessages && chatMessages.length > 0 ? [...chatMessages, newMessage] : [
       { role: 'system', content: 'You are a helpful scientific research assistant.' },
-                      {chatMessages
-                        .filter(msg => msg.role !== 'system')
-                        .map((msg, idx) => {
-                          // Remove all content between <think> and </think>
-                          const cleanContent = msg.content.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^<think>\s*/i, '');
-                          return (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                              <div className={`max-w-[80%] p-3 rounded-lg ${
-                                msg.role === 'user'
-                                  ? 'bg-blue-500 text-white'
-                                  : msg.isAiResponse
-                                    ? 'bg-green-50 text-gray-800 border-2 border-green-200'
-                                    : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {msg.role === 'assistant' && msg.isAiResponse && (
-                                  <div className="text-xs text-green-600 mb-1 flex items-center gap-1">
-                                    {/* AI Enhanced label */}
-                                    <span role="img" aria-label="AI">🤖</span> AI Enhanced • Real-time response
-                                  </div>
-                                )}
-                                <MarkdownMessage content={cleanContent} />
-                              </div>
-                            </div>
-                          );
-                        })}
-
+      newMessage
+    ];
   const handleGuidelineCheck = (id) => {
     setGuidelines(prev => prev.map(item => 
       item.id === id ? { ...item, checked: !item.checked } : item
