@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download } from 'lucide-react';
 
+import MarkdownMessage from './MarkdownMessage';
+
 function App() {
   const [activeTab, setActiveTab] = useState('models');
   const [selectedModels, setSelectedModels] = useState([]);
