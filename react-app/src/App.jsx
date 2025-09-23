@@ -22,45 +22,7 @@ function App() {
   // Animal models data - directly in component for simplicity
   const animalModels = [
     {
-      id: 'ts65dn',
-      name: 'Ts65Dn',
-      species: 'Mouse',
-      background: 'B6EiC3Sn',
-      trisomy: 'Partial (MMU16)',
-      genes: '104 genes',
-      phenotypes: ['Cognitive deficits', 'Craniofacial abnormalities', 'Heart defects', 'Cerebellar hypoplasia'],
-      advantages: ['Well-characterized', 'Cognitive phenotype', 'Available colonies', 'Extensive literature'],
-      limitations: ['Partial trisomy', 'Extra genes from MMU17', 'Fertility issues', 'Not complete DS model'],
-      applications: ['Cognitive studies', 'Therapeutics testing', 'Pathophysiology', 'Behavioral analysis'],
-      jackson_link: 'https://www.jax.org/strain/001924',
-      rrid: 'IMSR_JAX:001924'
-    },
-    {
-      id: 'tc1',
-      name: 'Tc1',
-      species: 'Mouse',
-      background: 'Mixed',
-      trisomy: 'Complete HSA21',
-      genes: 'Most HSA21 genes',
-      phenotypes: ['Learning deficits', 'Synaptic dysfunction', 'Neurodegeneration', 'Memory impairment'],
-      advantages: ['Complete human chr21', 'Human-relevant genetics', 'All DS genes present'],
-      limitations: ['Poor breeding', 'High mortality', 'Genomic instability', 'Limited availability'],
-      applications: ['Genetic studies', 'Molecular mechanisms', 'Human relevance studies', 'Gene dosage effects'],
-      jackson_link: 'https://www.jax.org/strain/004924',
-      rrid: 'IMSR_JAX:004924'
-    },
-    {
-      id: 'dp16',
-      name: 'Dp(16)1Yey',
-      species: 'Mouse',
-      background: 'C57BL/6J',
-      trisomy: 'Partial (MMU16)',
-      genes: '33 genes',
-      phenotypes: ['Motor deficits', 'Hyperactivity', 'Memory defects', 'Interferon dysregulation'],
-      advantages: ['Defined gene set', 'Good breeding', 'Interferon studies', 'JAK pathway research'],
-      limitations: ['Smaller gene set', 'Limited cognitive phenotype', 'Newer model'],
-      applications: ['Interferon pathway', 'Specific gene studies', 'Immunotherapy', 'JAK inhibitor studies'],
-      jackson_link: 'https://www.jax.org/strain/013530',
+                        })}
       rrid: 'IMSR_JAX:013530'
     },
     {
@@ -255,31 +217,31 @@ function App() {
     // Always build message history for context retention
     const updatedMessages = chatMessages && chatMessages.length > 0 ? [...chatMessages, newMessage] : [
       { role: 'system', content: 'You are a helpful scientific research assistant.' },
-      newMessage
-    ];
-    setChatMessages(updatedMessages);
-    let aiResponse = null;
-    // Try Perplexity first
-    aiResponse = await callPerplexityAPI(userMessage, updatedMessages);
-    if (!aiResponse) {
-      // Fallback to HuggingFace if Perplexity fails
-      aiResponse = await callHuggingFaceAPI(userMessage);
-    }
-    if (aiResponse) {
-      setChatMessages([...updatedMessages, { role: 'assistant', content: aiResponse }]);
-    } else {
-      setChatMessages([...updatedMessages, { role: 'assistant', content: simulateLLMResponse(userMessage) }]);
-    }
-    setIsLoading(false);
-  };
-
-  const handleModelSelect = (modelId) => {
-    setSelectedModels(prev => 
-      prev.includes(modelId) 
-        ? prev.filter(id => id !== modelId)
-        : [...prev, modelId]
-    );
-  };
+                      {chatMessages
+                        .filter(msg => msg.role !== 'system')
+                        .map((msg, idx) => {
+                          // Remove all content between <think> and </think>
+                          const cleanContent = msg.content.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^<think>\s*/i, '');
+                          return (
+                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[80%] p-3 rounded-lg ${
+                                msg.role === 'user'
+                                  ? 'bg-blue-500 text-white'
+                                  : msg.isAiResponse
+                                    ? 'bg-green-50 text-gray-800 border-2 border-green-200'
+                                    : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {msg.role === 'assistant' && msg.isAiResponse && (
+                                  <div className="text-xs text-green-600 mb-1 flex items-center gap-1">
+                                    {/* AI Enhanced label */}
+                                    <span role="img" aria-label="AI">🤖</span> AI Enhanced • Real-time response
+                                  </div>
+                                )}
+                                <MarkdownMessage content={cleanContent} />
+                              </div>
+                            </div>
+                          );
+                        })}
 
   const handleGuidelineCheck = (id) => {
     setGuidelines(prev => prev.map(item => 
