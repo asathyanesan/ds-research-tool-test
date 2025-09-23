@@ -250,17 +250,31 @@ function App() {
   const handleChat = async () => {
     if (!chatInput.trim()) return;
     
-    setIsLoading(true);
-    const userMessage = { type: 'user', content: chatInput };
-    
-    // Add user message immediately
-    setChatMessages(prev => [...prev, userMessage]);
-    const currentInput = chatInput;
-    setChatInput('');
+        setIsLoading(true);
+        const userMessage = { type: 'user', content: chatInput };
+        
+        // Add user message immediately
+        setChatMessages(prev => [...prev, userMessage]);
+        const currentInput = chatInput;
+        setChatInput('');
 
-    try {
-  // Try Perplexity API first, then fallback to HuggingFace
-  const aiResponse = await callPerplexityAPI(currentInput);
+        // Build full message history for context
+        const systemPrompt = {
+          role: 'system',
+          content: 'You are a scientific research assistant. Respond with factual, authoritative, and complete sentences. Provide thorough answers in 10-20 sentences, using scientific terminology and passive voice. Avoid first-person language and reasoning steps. Summarize findings as in a scientific review or textbook. Do not include phrases like "I think" or "I believe." If relevant, cite evidence or studies. End with: "Would you like more specific information on any aspect?"'
+        };
+        const messageHistory = [
+          systemPrompt,
+          ...chatMessages.map(msg => ({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          })),
+          { role: 'user', content: currentInput }
+        ];
+
+        try {
+          // Try Perplexity API first, then fallback to HuggingFace
+          const aiResponse = await callPerplexityAPI(currentInput, messageHistory);
       
       let responseContent;
       let isAiResponse = false;
