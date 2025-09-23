@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download } from 'lucide-react';
+import MarkdownMessage from './MarkdownMessage';
 function App() {
   const [activeTab, setActiveTab] = useState('models');
   const [selectedModels, setSelectedModels] = useState([]);
@@ -13,6 +14,29 @@ function App() {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages, isLoading]);
+
+  const [guidelines, setGuidelines] = useState([
+    { id: 1, category: 'Study Design', item: 'Provide precise details of study design including primary research question', checked: false },
+    { id: 2, category: 'Study Design', item: 'Explain how sample size was determined', checked: false },
+    { id: 3, category: 'Animals', item: 'Provide details of animals used including species, strain, sex, age', checked: false },
+    { id: 4, category: 'Animals', item: 'Explain housing and husbandry conditions', checked: false },
+    { id: 5, category: 'Procedures', item: 'Describe procedures in detail for each experimental group', checked: false },
+    { id: 6, category: 'Procedures', item: 'Describe experimental outcomes and how they were assessed', checked: false },
+    { id: 7, category: 'Statistics', item: 'Describe statistical methods for each analysis', checked: false },
+    { id: 8, category: 'Statistics', item: 'Report exact P values and effect sizes where possible', checked: false },
+    { id: 9, category: 'Results', item: 'Report study timeline and actual sample sizes', checked: false },
+    { id: 10, category: 'Results', item: 'Present results with appropriate statistics', checked: false }
+  ]);
+
+  // ... (all other logic and handlers from previous code)
+
+  // Place all logic and handlers here (from previous code)
+  // ...
+
+  // Return statement (from previous code)
+  // ...
+  // (Paste the full return statement and JSX from previous code)
+
 }
   const [guidelines, setGuidelines] = useState([
     { id: 1, category: 'Study Design', item: 'Provide precise details of study design including primary research question', checked: false },
