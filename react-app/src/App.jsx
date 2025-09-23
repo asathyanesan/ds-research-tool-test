@@ -97,8 +97,8 @@ function App() {
     const callPerplexityAPI = async (prompt, messageHistory) => {
       const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
       if (!apiKey) {
-        console.log('No Perplexity API key found, trying HuggingFace fallback');
-        return await callHuggingFaceAPI(prompt);
+        console.log('No Perplexity API key found, using fallback response');
+        return null;
       }
       try {
         const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -108,7 +108,7 @@ function App() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'pplx-70b-online',
+            model: 'sonar-large-online',
             messages: messageHistory,
             max_tokens: 900,
             temperature: 0.2
@@ -117,7 +117,7 @@ function App() {
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Perplexity API Error ${response.status}:`, errorText);
-          return await callHuggingFaceAPI(prompt);  // Fallback to HuggingFace
+          return null;
         }
         const data = await response.json();
         console.log('Perplexity API response:', data);
@@ -126,10 +126,10 @@ function App() {
           return content;
         }
         console.log('Unexpected Perplexity response format:', data);
-        return await callHuggingFaceAPI(prompt);  // Fallback
+        return null;
       } catch (error) {
         console.error('Perplexity API error:', error);
-        return await callHuggingFaceAPI(prompt);  // Fallback
+        return null;
       }
     };
 
@@ -247,51 +247,28 @@ function App() {
     return 'I can help with DS animal model selection, experimental design, sample size calculations, ARRIVE compliance, and RRID identification. Ask me about specific models or research guidelines!';
   };
 
-  const handleChat = async () => {
-    if (!chatInput.trim()) return;
-    
+  const handleChat = async (userMessage) => {
     setIsLoading(true);
-    const userMessage = { type: 'user', content: chatInput };
-    
-    // Add user message immediately
-    setChatMessages(prev => [...prev, userMessage]);
-    const currentInput = chatInput;
-    setChatInput('');
-
-    try {
-  // Try Perplexity API first, then fallback to HuggingFace
-  const aiResponse = await callPerplexityAPI(currentInput);
-      
-      let responseContent;
-      let isAiResponse = false;
-      
-      if (aiResponse && aiResponse.length > 10) {
-        responseContent = aiResponse;
-        isAiResponse = true;
-      } else {
-        // Fallback to curated responses
-        responseContent = simulateLLMResponse(currentInput);
-      }
-      
-      const assistantMessage = { 
-        type: 'assistant', 
-        content: responseContent,
-        isAiResponse: isAiResponse
-      };
-      
-      setChatMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Chat error:', error);
-      // Fallback to curated response on error
-      const fallbackMessage = { 
-        type: 'assistant', 
-        content: simulateLLMResponse(currentInput),
-        isAiResponse: false
-      };
-      setChatMessages(prev => [...prev, fallbackMessage]);
-    } finally {
-      setIsLoading(false);
+    const newMessage = { role: 'user', content: userMessage };
+    // Always build message history for context retention
+    const updatedMessages = chatMessages && chatMessages.length > 0 ? [...chatMessages, newMessage] : [
+      { role: 'system', content: 'You are a helpful scientific research assistant.' },
+      newMessage
+    ];
+    setChatMessages(updatedMessages);
+    let aiResponse = null;
+    // Try Perplexity first
+    aiResponse = await callPerplexityAPI(userMessage, updatedMessages);
+    if (!aiResponse) {
+      // Fallback to HuggingFace if Perplexity fails
+      aiResponse = await callHuggingFaceAPI(userMessage);
     }
+    if (aiResponse) {
+      setChatMessages([...updatedMessages, { role: 'assistant', content: aiResponse }]);
+    } else {
+      setChatMessages([...updatedMessages, { role: 'assistant', content: simulateLLMResponse(userMessage) }]);
+    }
+    setIsLoading(false);
   };
 
   const handleModelSelect = (modelId) => {
