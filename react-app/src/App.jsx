@@ -108,7 +108,7 @@ function App() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'pplx-70b-online',
+            model: 'sonar-large-online',
             messages: messageHistory,
             max_tokens: 900,
             temperature: 0.2
