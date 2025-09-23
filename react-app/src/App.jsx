@@ -766,13 +766,13 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleChat()}
+                    onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleChat(chatInput)}
                     placeholder="Ask about DS models, experimental design, RRIDs, sample sizes..."
                     className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     disabled={isLoading}
                   />
                   <button
-                    onClick={handleChat}
+                    onClick={() => handleChat(chatInput)}
                     disabled={isLoading || !chatInput.trim()}
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       isLoading || !chatInput.trim()
