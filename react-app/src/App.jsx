@@ -647,7 +647,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
           {activeTab === 'chat' && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">AI Research Assistant</h2>
+              <h2 className="text-2xl font-semibold mb-4">AI Research Assistant <span className="text-sm text-gray-500 font-normal">(AI can make mistakes - please verify response accuracy)</span></h2>
               <div className="border rounded-lg h-96 flex flex-col">
                 <div ref={chatContainerRef} className="flex-1 p-4 overflow-y-auto space-y-4">
                   {chatMessages.length === 0 ? (
@@ -656,12 +656,8 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       <p className="mb-4">Ask me about DS animal models, experimental design, or research guidance!</p>
                       <div className="text-sm space-y-2 bg-gray-50 p-4 rounded-lg">
                         <p><strong>Try asking:</strong></p>
-                        <p>• "Which model is best for cognitive studies?"</p>
-                        <p>• "How many mice do I need for behavioral testing?"</p>
-                        <p>• "What are the advantages of Ts65Dn vs Tc1?"</p>
-                        <p>• "Design tips for immunotherapy studies?"</p>
-                        <p>• "What RRID should I use for Dp16 mice?"</p>
-                        <p>• "ARRIVE guidelines for my study?"</p>
+                        <p>• "Which DS model is best for cognitive studies"</p>
+                        <p>• "Design tips for immunotherapy studies in DS animal models"</p>
                       </div>
                     </div>
                   ) : (
