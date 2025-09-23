@@ -682,29 +682,8 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                                   🤖 AI Enhanced • Real-time response
                                 </div>
                               )}
-                              {/* Render <think>...</think> as grey italic, rest as normal markdown */}
-                              {(() => {
-                                // Enhanced <think> handling: render content between <think> and </think> as grey italic, ignore stray </think>
-                                const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>/i);
-                                if (thinkMatch) {
-                                  const before = msg.content.slice(0, thinkMatch.index);
-                                  const thinkText = thinkMatch[1];
-                                  const after = msg.content.slice(thinkMatch.index + thinkMatch[0].length);
-                                  return (
-                                    <>
-                                      {before && <MarkdownMessage content={before} />}
-                                      <div style={{ color: '#6b7280', fontStyle: 'italic', margin: '0.5em 0' }}>
-                                        {thinkText}
-                                      </div>
-                                      {after && <MarkdownMessage content={after} />}
-                                    </>
-                                  );
-                                } else {
-                                  // If only </think> is present, ignore it
-                                  const cleaned = msg.content.replace(/<\/think>/gi, '');
-                                  return <MarkdownMessage content={cleaned} />;
-                                }
-                              })()}
+                              {/* Render message as markdown, do NOT strip <think> tag */}
+                              <MarkdownMessage content={msg.content} />
                             </div>
                           </div>
                         ))}
