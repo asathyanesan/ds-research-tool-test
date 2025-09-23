@@ -658,7 +658,26 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                                   🤖 AI Enhanced • Real-time response
                                 </div>
                               )}
-                              <MarkdownMessage content={msg.content.replace(/^<think>\s*/i, '')} />
+                              {/* Render <think>...</think> as grey italic, rest as normal markdown */}
+                              {(() => {
+                                const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>/i);
+                                if (thinkMatch) {
+                                  const before = msg.content.slice(0, thinkMatch.index);
+                                  const thinkText = thinkMatch[1];
+                                  const after = msg.content.slice(thinkMatch.index + thinkMatch[0].length);
+                                  return (
+                                    <>
+                                      {before && <MarkdownMessage content={before} />}
+                                      <div style={{ color: '#6b7280', fontStyle: 'italic', margin: '0.5em 0' }}>
+                                        {thinkText}
+                                      </div>
+                                      {after && <MarkdownMessage content={after} />}
+                                    </>
+                                  );
+                                } else {
+                                  return <MarkdownMessage content={msg.content} />;
+                                }
+                              })()}
                             </div>
                           </div>
                         ))}
