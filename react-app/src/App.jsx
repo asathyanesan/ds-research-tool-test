@@ -110,7 +110,7 @@ function App() {
           body: JSON.stringify({
             model: 'sonar-reasoning',
             messages: messageHistory,
-            max_tokens: 900,
+            max_tokens: 2048,
             temperature: 0.2
           })
         });
@@ -730,24 +730,26 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                     </div>
                   ) : (
                     <>
-                      {chatMessages.map((msg, idx) => (
-                        <div key={idx} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] p-3 rounded-lg ${
-                            msg.type === 'user' 
-                              ? 'bg-blue-500 text-white' 
-                              : msg.isAiResponse 
-                                ? 'bg-green-50 text-gray-800 border-2 border-green-200'
-                                : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {msg.type === 'assistant' && msg.isAiResponse && (
-                              <div className="text-xs text-green-600 mb-1 flex items-center gap-1">
-                                🤖 AI Enhanced • Real-time response
-                              </div>
-                            )}
-                            <div className="whitespace-pre-wrap">{msg.content}</div>
+                      {chatMessages
+                        .filter(msg => msg.role !== 'system')
+                        .map((msg, idx) => (
+                          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] p-3 rounded-lg ${
+                              msg.role === 'user'
+                                ? 'bg-blue-500 text-white'
+                                : msg.isAiResponse
+                                  ? 'bg-green-50 text-gray-800 border-2 border-green-200'
+                                  : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {msg.role === 'assistant' && msg.isAiResponse && (
+                                <div className="text-xs text-green-600 mb-1 flex items-center gap-1">
+                                  🤖 AI Enhanced • Real-time response
+                                </div>
+                              )}
+                              <MarkdownMessage content={msg.content.replace(/^<think>\s*/i, '')} />
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                       {isLoading && (
                         <div className="flex justify-start">
                           <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
