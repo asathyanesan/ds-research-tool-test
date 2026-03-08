@@ -20,16 +20,58 @@ Visit: [https://asathyanesan.github.io/ds-research-tool](https://asathyanesan.gi
 ### Prerequisites
 - Node.js 18+ 
 - npm or yarn
+- Azure OpenAI API access (endpoint and API key)
 
 ### Setup
+
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/asathyanesan/ds-research-tool.git
-cd ds-research-tool/react-app
+cd ds-research-tool
+```
+
+#### 2. Backend Setup (Azure OpenAI Proxy)
+```bash
+cd backend
 npm install
+
+# Copy environment template and configure Azure credentials
+cp .env.example .env
+# Edit .env and add your Azure OpenAI credentials:
+# - AZURE_OPENAI_ENDPOINT (e.g., https://your-resource.openai.azure.com/)
+# - AZURE_OPENAI_API_KEY (from Azure Portal)
+# - AZURE_OPENAI_DEPLOYMENT_NAME (your GPT deployment name)
+
+# Start backend server (runs on port 3001)
+npm start
+```
+
+#### 3. Frontend Setup
+```bash
+cd ../react-app
+npm install
+
+# Start development server (runs on port 5173)
 npm run dev
 ```
 
+#### 4. Access the Application
 Open [http://localhost:5173](http://localhost:5173) to view it in your browser.
+
+The frontend will automatically proxy API requests to the backend server running on port 3001.
+
+### Azure OpenAI Configuration
+
+To use the AI Assistant chat feature, you need:
+
+1. **Azure OpenAI Resource**: Create one at [Azure Portal](https://portal.azure.com)
+2. **Model Deployment**: Deploy GPT-4, GPT-4 Turbo, or GPT-3.5 Turbo in Azure OpenAI Studio
+3. **API Credentials**: Get your endpoint URL and API key from Azure Portal
+4. **Environment Variables**: 
+   - **Local dev**: Configure `backend/.env` with your credentials (see `backend/.env.example`)
+   - **Production**: Add secrets to GitHub for automated deployment (see [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md))
+
+Without Azure OpenAI configured, the chat will fall back to mock responses with DS research knowledge.
 
 ## 📊 Animal Models Included
 
@@ -89,6 +131,13 @@ Coming soon!
 
 ```
 ds-research-tool/
+├── backend/
+│   ├── services/
+│   │   └── azureOpenAI.js       # Azure OpenAI API integration
+│   ├── server.js                 # Express server with API proxy
+│   ├── package.json
+│   ├── .env.example             # Environment variable template
+│   └── .env                     # Your Azure credentials (gitignored)
 ├── react-app/
 │   ├── public/
 │   │   └── data/
@@ -103,23 +152,62 @@ ds-research-tool/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml
+├── .gitignore
 └── README.md
 ```
 
 ## 🚀 Deployment
 
-The application automatically deploys to GitHub Pages via GitHub Actions when changes are pushed to the main branch. To deploy manually:
+### Frontend Deployment (GitHub Pages)
 
-1. Build the application:
-   ```bash
-   cd react-app
-   npm run build
-   ```
+The frontend automatically deploys to GitHub Pages via GitHub Actions when changes are pushed to the main branch. 
 
-2. Deploy to GitHub Pages:
-   ```bash
-   npm run deploy
-   ```
+To deploy manually:
+```bash
+cd react-app
+npm run build
+npm run deploy
+```
+
+### Backend Deployment (Automated via GitHub Actions)
+
+The backend automatically deploys to Azure Web App using GitHub Actions when you push to the main branch.
+
+#### Setup (One-Time)
+
+1. **Create Azure Web App** and get publish profile
+2. **Add GitHub Secrets** with your Azure credentials
+3. **Update production backend URL** in `react-app/.env.production`
+
+**📋 Detailed Instructions:** See [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md)
+
+#### Required GitHub Secrets
+
+Add these in **Settings → Secrets and variables → Actions**:
+- `AZURE_OPENAI_ENDPOINT` - Your Azure OpenAI endpoint
+- `AZURE_OPENAI_API_KEY` - Your Azure OpenAI API key
+- `AZURE_OPENAI_DEPLOYMENT_NAME` - Your GPT deployment name
+- `AZURE_WEBAPP_NAME` - Your Azure Web App name
+- `AZURE_WEBAPP_PUBLISH_PROFILE` - Download from Azure Portal
+
+#### Manual Deployment
+
+Trigger manually from **Actions** tab → **Deploy Backend to Azure** → **Run workflow**
+
+#### Alternative Deployment Options
+
+**Option 2: Vercel**
+```bash
+npm i -g vercel
+cd backend
+vercel
+```
+
+**Option 3: Railway / Render**
+1. Connect GitHub repo
+2. Select `backend` folder as root directory
+3. Add environment variables
+4. Deploy on git push
 
 ## 🧬 Model Selection Guide
 
@@ -160,9 +248,14 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## 🔧 Technical Details
 
 - **Frontend**: React 18 with Vite
+- **Backend**: Node.js + Express (API proxy for Azure OpenAI)
+- **AI**: Azure OpenAI (GPT-4/GPT-5.1) via secure backend proxy
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
-- **Search**: Fuse.js for fuzzy search
-- **Deployment**: GitHub Pages with GitHub Actions
+- **Markdown Rendering**: react-markdown for AI responses
+- **Deployment**: 
+  - Frontend: GitHub Pages with GitHub Actions
+  - Backend: Azure App Service, Vercel, or Railway (requires separate deployment)
 - **Data**: JSON files served statically
+- **Security**: API keys stored server-side, never exposed to browser
 Down syndrome animal model research assistant
