@@ -32,6 +32,7 @@ jobs:
 
     - name: Build
       env:
+        VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
         VITE_HUGGINGFACE_API_KEY: ${{ secrets.VITE_HUGGINGFACE_API_KEY }}
         VITE_GROK_API_KEY: ${{ secrets.VITE_GROK_API_KEY }}
         VITE_GROQ_API_KEY: ${{ secrets.VITE_GROQ_API_KEY }}
@@ -39,6 +40,7 @@ jobs:
       run: |
         cd react-app
         echo "Building with environment variables..."
+        echo "Backend URL: $VITE_BACKEND_URL"
         echo "API key exists: $([[ -n "$VITE_HUGGINGFACE_API_KEY" ]] && echo "YES" || echo "NO")"
         npm run build
 
