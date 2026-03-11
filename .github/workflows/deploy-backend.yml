@@ -28,47 +28,23 @@ jobs:
           cd backend
           npm ci
 
+      - name: Create .env file
+        run: |
+          cd backend
+          cat > .env << EOF
+          AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_DEPLOYMENT_NAME=${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
+          AZURE_OPENAI_EMBEDDING_DEPLOYMENT=${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
+          AZURE_OPENAI_API_VERSION=2024-02-15-preview
+          NCBI_API_KEY=${{ secrets.NCBI_API_KEY }}
+          ALLOWED_ORIGINS=https://${{ github.repository_owner }}.github.io
+          PORT=8080
+          EOF
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./backend
-
-      - name: Configure App Settings
-        uses: azure/appservice-settings@v1
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          app-settings-json: |
-            [
-              {
-                "name": "AZURE_OPENAI_ENDPOINT",
-                "value": "${{ secrets.AZURE_OPENAI_ENDPOINT }}",
-                "slotSetting": false
-              },
-              {
-                "name": "AZURE_OPENAI_API_KEY",
-                "value": "${{ secrets.AZURE_OPENAI_API_KEY }}",
-                "slotSetting": false
-              },
-              {
-                "name": "AZURE_OPENAI_DEPLOYMENT_NAME",
-                "value": "${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}",
-                "slotSetting": false
-              },
-              {
-                "name": "AZURE_OPENAI_API_VERSION",
-                "value": "2024-02-15-preview",
-                "slotSetting": false
-              },
-              {
-                "name": "ALLOWED_ORIGINS",
-                "value": "https://${{ github.repository_owner }}.github.io",
-                "slotSetting": false
-              },
-              {
-                "name": "PORT",
-                "value": "8080",
-                "slotSetting": false
-              }
-            ]

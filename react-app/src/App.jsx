@@ -39,12 +39,94 @@ function App() {
       .catch(error => console.error('Error loading animal models:', error));
   }, []);
 
-  // HuggingFace API integration (fallback) - DEPRECATED
-  // Note: HuggingFace free Inference API was discontinued in 2026
+  // HuggingFace API integration (fallback)
   const callHuggingFaceAPI = async (prompt) => {
-    // HuggingFace Inference API is no longer available (returns 410 Gone)
-    // Returning null to use knowledge-base fallback
-    console.log('HuggingFace Inference API deprecated - using knowledge base fallback');
+    const HF_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
+    
+    if (!HF_API_KEY) {
+      console.warn('HuggingFace API key not configured');
+      return null;
+    }
+
+    try {
+      const response = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${HF_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          inputs: `You are a research assistant specializing in Down syndrome animal models. ${prompt}`,
+          parameters: {
+            max_new_tokens: 500,
+            temperature: 0.7,
+            top_p: 0.95,
+            return_full_text: false
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data[0] && data[0].generated_text) {
+          return data[0].generated_text;
+        }
+      } else {
+        console.error('HuggingFace API error:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('HuggingFace API call failed:', error);
+    }
+    
+    return null;
+  };
+
+  // Groq API integration (third fallback)
+  const callGroqAPI = async (prompt) => {
+    const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+    console.log('Groq API key loaded:', GROQ_API_KEY ? `${GROQ_API_KEY.substring(0, 7)}...` : 'MISSING');
+    
+    if (!GROQ_API_KEY) {
+      console.warn('Groq API key not configured');
+      return null;
+    }
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a research assistant specializing in Down syndrome animal models, experimental design, and ARRIVE guidelines.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          model: 'llama-3.1-70b-versatile',
+          temperature: 0.7,
+          max_tokens: 1024
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.choices && data.choices[0] && data.choices[0].message) {
+          return data.choices[0].message.content;
+        }
+      } else {
+        console.error('Groq API error:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Groq API call failed:', error);
+    }
+    
     return null;
   };
 
@@ -131,13 +213,43 @@ function App() {
           if (errorData.message.toLowerCase().includes('rate limit') || 
               errorData.message.toLowerCase().includes('quota') ||
               errorData.message.toLowerCase().includes('429')) {
-            console.log('Azure OpenAI rate limit detected, using knowledge base fallback...');
-            setLoadingStatus('Azure limit reached - using knowledge base...');
+            console.log('Azure OpenAI rate limit detected, trying HuggingFace fallback...');
+            setLoadingStatus('Azure limit - trying HuggingFace...');
             
-            // HuggingFace is deprecated, go directly to knowledge base
+            // Try HuggingFace fallback
+            const hfResponse = await callHuggingFaceAPI(userMessage);
+            if (hfResponse) {
+              const hfMessage = { 
+                role: 'assistant', 
+                content: '⚠️ **Azure OpenAI rate limit reached.** _Using HuggingFace Mistral-7B:_\n\n---\n\n' + hfResponse
+              };
+              setChatMessages([...updatedMessages, hfMessage]);
+              setIsLoading(false);
+              setLoadingStatus('');
+              return;
+            }
+            
+            // HuggingFace failed, try Groq
+            console.log('HuggingFace unavailable, trying Groq...');
+            setLoadingStatus('Trying Groq...');
+            const groqResponse = await callGroqAPI(userMessage);
+            if (groqResponse) {
+              const groqMessage = { 
+                role: 'assistant', 
+                content: '⚠️ **Azure and HuggingFace unavailable.** _Using Groq Llama 3.1:_\n\n---\n\n' + groqResponse
+              };
+              setChatMessages([...updatedMessages, groqMessage]);
+              setIsLoading(false);
+              setLoadingStatus('');
+              return;
+            }
+            
+            // Groq failed, use knowledge base
+            console.log('All AI services unavailable, using knowledge base...');
+            setLoadingStatus('Using knowledge base...');
             const rateLimitMessage = { 
               role: 'assistant', 
-              content: '⚠️ **Azure OpenAI rate limit reached.**\n\n_Using curated knowledge base response:_\n\n---\n\n' + simulateLLMResponse(userMessage)
+              content: '⚠️ **All AI services rate limited.**\n\n_Using curated knowledge base response:_\n\n---\n\n' + simulateLLMResponse(userMessage)
             };
             setChatMessages([...updatedMessages, rateLimitMessage]);
             setIsLoading(false);
@@ -147,8 +259,39 @@ function App() {
         }
       }
       
-      // Fallback: Backend unavailable, use knowledge base
-      console.log('Backend unavailable, using knowledge base fallback...');
+      // Fallback: Backend unavailable, try HuggingFace then Grok then knowledge base
+      console.log('Backend unavailable, trying HuggingFace fallback...');
+      setLoadingStatus('Backend down - trying HuggingFace...');
+      
+      const hfResponse = await callHuggingFaceAPI(userMessage);
+      if (hfResponse) {
+        const hfMessage = { 
+          role: 'assistant', 
+          content: '⚠️ **Backend unavailable.** _Using HuggingFace Mistral-7B:_\n\n---\n\n' + hfResponse
+        };
+        setChatMessages([...updatedMessages, hfMessage]);
+        setIsLoading(false);
+        setLoadingStatus('');
+        return;
+      }
+      
+      // HuggingFace also failed, try Groq
+      console.log('HuggingFace unavailable, trying Groq...');
+      setLoadingStatus('Trying Groq...');
+      const groqResponse = await callGroqAPI(userMessage);
+      if (groqResponse) {
+        const groqMessage = { 
+          role: 'assistant', 
+          content: '⚠️ **Backend and HuggingFace unavailable.** _Using Groq Llama 3.1:_\n\n---\n\n' + groqResponse
+        };
+        setChatMessages([...updatedMessages, groqMessage]);
+        setIsLoading(false);
+        setLoadingStatus('');
+        return;
+      }
+      
+      // All AI services failed, use knowledge base
+      console.log('All AI services unavailable, using knowledge base fallback...');
       setLoadingStatus('Using knowledge base...');
       const mockResponse = simulateLLMResponse(userMessage);
       const assistantMessage = { role: 'assistant', content: mockResponse };
@@ -315,7 +458,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <p>• Verified Citations</p>
               <p>• Content Verification</p>
               <p className="mt-2 text-[10px] text-blue-600">
-                <span className="font-semibold">AI:</span> Azure OpenAI + Knowledge Base
+                <span className="font-semibold">AI:</span> Azure OpenAI → HuggingFace → Groq → Knowledge Base
               </p>
             </div>
           </div>

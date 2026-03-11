@@ -196,6 +196,19 @@ Trigger manually from **Actions** tab → **Deploy Backend to Azure** → **Run 
 
 #### Alternative Deployment Options
 
+**Option 1: Oracle Cloud Always Free (Recommended - FREE Forever!)**
+
+Deploy your backend to Oracle Cloud's free tier - never expires, no credit card required!
+
+📖 **[Complete Oracle Cloud Setup Guide](ORACLE_CLOUD_SETUP.md)** ← **START HERE**
+
+Features:
+- ✅ **FREE forever** (4 OCPUs + 24 GB RAM)
+- ✅ Handles 100-200 daily users
+- ✅ Never sleeps (unlike Render/Railway)
+- ✅ 10 TB bandwidth/month
+- ✅ Full backend functionality (RAG + citations)
+
 **Option 2: Vercel**
 ```bash
 npm i -g vercel
