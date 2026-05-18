@@ -65,22 +65,24 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 2000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 700 })
     });
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(`GPT-5.5 error ${response.status}: ${err?.error?.message || response.statusText}`);
+      const raw = await response.text().catch(() => '');
+      const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
+      if (response.status === 429) throw new Error('GPT-5.5 rate limit exceeded — please wait a moment and try again.');
+      throw new Error(`GPT-5.5 error ${response.status}: ${msg || response.statusText}`);
     }
     const data = await response.json();
     return data.choices[0].message.content;
   };
 
-  const callFlyerClaudeOpus47 = async (messages) => {
+  const callFlyerClaudeSonnet46 = async (messages) => {
     if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
     const systemMsg = messages.find(m => m.role === 'system');
     const chatMsgs = messages.filter(m => m.role !== 'system');
     const url = `${WORKER_BASE}/anthropic/v1/messages`;
-    const body = { model: 'claude-opus-4-7', max_tokens: 2000, messages: chatMsgs };
+    const body = { model: 'claude-opus-4-7', max_tokens: 700, messages: chatMsgs };
     if (systemMsg) body.system = systemMsg.content;
     const response = await fetch(url, {
       method: 'POST',
@@ -88,8 +90,10 @@ function App() {
       body: JSON.stringify(body)
     });
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(`Claude Opus 4.7 error ${response.status}: ${err?.error?.message || response.statusText}`);
+      const raw = await response.text().catch(() => '');
+      const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
+      if (response.status === 429) throw new Error('Claude Sonnet 4.6 rate limit exceeded — please wait a moment and try again.');
+      throw new Error(`Claude Sonnet 4.6 error ${response.status}: ${msg || response.statusText}`);
     }
     const data = await response.json();
     return (data.content || []).map(b => b.text || '').join('');
@@ -112,7 +116,7 @@ function App() {
         : [DS_SYSTEM_PROMPT, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
-        : await callFlyerClaudeOpus47(messagesWithSystem);
+        : await callFlyerClaudeSonnet46(messagesWithSystem);
       setChatMessages([...updatedMessages, { role: 'assistant', content: responseText }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -254,7 +258,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <p>• Verified Citations</p>
               <p>• Content Verification</p>
               <p className="mt-2 text-[10px] text-blue-600">
-                <span className="font-semibold">AI:</span> GPT-5.5 &amp; Claude Opus 4.7 via FlyerGPT
+                <span className="font-semibold">AI:</span> GPT-5.5 &amp; Claude Sonnet 4.6 via FlyerGPT
               </p>
             </div>
           </div>
