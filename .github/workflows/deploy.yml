@@ -32,11 +32,10 @@ jobs:
 
     - name: Build
       env:
-        VITE_FLYER_API_KEY: ${{ secrets.VITE_FLYER_API_KEY }}
+        VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
       run: |
         cd react-app
-        echo "Building with environment variables..."
-        echo "FlyerGPT key exists: $([[ -n "$VITE_FLYER_API_KEY" ]] && echo "YES" || echo "NO")"
+        echo "Worker URL configured: $([[ -n "$VITE_WORKER_URL" ]] && echo "YES" || echo "NO")"
         npm run build
 
     - name: Setup Pages

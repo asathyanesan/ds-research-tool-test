@@ -52,7 +52,7 @@ function App() {
     ));
   };
 
-  const FLYER_BASE = 'https://apim-n1ai-use2-flyer.azure-api.net';
+  const WORKER_BASE = import.meta.env.VITE_WORKER_URL;
 
   const DS_SYSTEM_PROMPT = {
     role: 'system',
@@ -60,12 +60,11 @@ function App() {
   };
 
   const callFlyerGPT55 = async (messages) => {
-    const apiKey = import.meta.env.VITE_FLYER_API_KEY;
-    if (!apiKey) throw new Error('VITE_FLYER_API_KEY not configured');
-    const url = `${FLYER_BASE}/openai/deployments/gpt-5.5/chat/completions?api-version=2024-10-21`;
+    if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
+    const url = `${WORKER_BASE}/openai/deployments/gpt-5.5/chat/completions?api-version=2024-10-21`;
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, max_completion_tokens: 2000 })
     });
     if (!response.ok) {
@@ -77,20 +76,15 @@ function App() {
   };
 
   const callFlyerClaudeOpus47 = async (messages) => {
-    const apiKey = import.meta.env.VITE_FLYER_API_KEY;
-    if (!apiKey) throw new Error('VITE_FLYER_API_KEY not configured');
+    if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
     const systemMsg = messages.find(m => m.role === 'system');
     const chatMsgs = messages.filter(m => m.role !== 'system');
-    const url = `${FLYER_BASE}/anthropic/v1/messages`;
+    const url = `${WORKER_BASE}/anthropic/v1/messages`;
     const body = { model: 'claude-opus-4-7', max_tokens: 2000, messages: chatMsgs };
     if (systemMsg) body.system = systemMsg.content;
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     if (!response.ok) {

@@ -1,0 +1,6 @@
+name = "flyer-cors-proxy"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# FLYER_API_KEY must be set as a secret (never in this file):
+#   wrangler secret put FLYER_API_KEY
