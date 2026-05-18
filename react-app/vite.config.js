@@ -9,14 +9,5 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets'
   },
-  server: {
-    proxy: {
-      // Proxy API requests to backend server during development
-      '/api': {
-        target: 'http://localhost:3003',
-        changeOrigin: true,
-        secure: false
-      }
-    }
-  }
+  server: {}
 })

@@ -9,6 +9,7 @@ function App() {
   const [chatMessages, setChatMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gpt-5.5');
   const chatContainerRef = useRef(null);
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -39,300 +40,101 @@ function App() {
       .catch(error => console.error('Error loading animal models:', error));
   }, []);
 
-  // HuggingFace API integration (fallback)
-  const callHuggingFaceAPI = async (prompt) => {
-    const HF_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-    
-    if (!HF_API_KEY) {
-      console.warn('HuggingFace API key not configured');
-      return null;
-    }
-
-    try {
-      const response = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${HF_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          inputs: `You are a research assistant specializing in Down syndrome animal models. ${prompt}`,
-          parameters: {
-            max_new_tokens: 500,
-            temperature: 0.7,
-            top_p: 0.95,
-            return_full_text: false
-          }
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data[0] && data[0].generated_text) {
-          return data[0].generated_text;
-        }
-      } else {
-        console.error('HuggingFace API error:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('HuggingFace API call failed:', error);
-    }
-    
-    return null;
+  const handleModelSelect = (modelId) => {
+    setSelectedModels(prev =>
+      prev.includes(modelId) ? prev.filter(id => id !== modelId) : [...prev, modelId]
+    );
   };
 
-  // Groq API integration (third fallback)
-  const callGroqAPI = async (prompt) => {
-    const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-    console.log('Groq API key loaded:', GROQ_API_KEY ? `${GROQ_API_KEY.substring(0, 7)}...` : 'MISSING');
-    
-    if (!GROQ_API_KEY) {
-      console.warn('Groq API key not configured');
-      return null;
-    }
-
-    try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a research assistant specializing in Down syndrome animal models, experimental design, and ARRIVE guidelines.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          model: 'llama-3.1-70b-versatile',
-          temperature: 0.7,
-          max_tokens: 1024
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.choices && data.choices[0] && data.choices[0].message) {
-          return data.choices[0].message.content;
-        }
-      } else {
-        console.error('Groq API error:', response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error('Groq API call failed:', error);
-    }
-    
-    return null;
+  const handleGuidelineCheck = (id) => {
+    setGuidelines(prev => prev.map(item =>
+      item.id === id ? { ...item, checked: !item.checked } : item
+    ));
   };
 
-  const simulateLLMResponse = (query) => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes('ts65dn') || lowerQuery.includes('cognitive')) {
-      return 'For cognitive studies, Ts65Dn is the gold standard DS mouse model (RRID: IMSR_JAX:001924). It shows robust learning and memory deficits similar to DS. Recommended tests: Morris Water Maze, Novel Object Recognition, Y-maze. Consider n≥10 per group and account for sex differences.';
-    }
-    
-    if (lowerQuery.includes('tc1') || lowerQuery.includes('human')) {
-      return 'Tc1 mice (RRID: IMSR_JAX:004924) carry the complete human chromosome 21, making them genetically most similar to DS. However, they have breeding difficulties and high mortality. Best for molecular studies.';
-    }
-    
-    if (lowerQuery.includes('dp16') || lowerQuery.includes('interferon')) {
-      return 'Dp(16)1Yey mice (RRID: IMSR_JAX:013530) are excellent for interferon pathway and immunotherapy studies. Perfect for JAK inhibitor studies, cytokine analysis, and neuroinflammation research.';
-    }
-    
-    if (lowerQuery.includes('sample size') || lowerQuery.includes('power')) {
-      return 'Sample size depends on effect size and variability. For behavioral studies: n=8-12 per group (80% power, α=0.05). For molecular studies: n=6-8 may suffice. Use G*Power calculator and account for 10-20% attrition.';
-    }
-    
-    if (lowerQuery.includes('rrid')) {
-      return 'RRIDs are required for proper scientific reporting. DS models: Ts65Dn (IMSR_JAX:001924), Tc1 (IMSR_JAX:004924), Dp16 (IMSR_JAX:013530), Dp17 (IMSR_JAX:013529). Include in methods section for reproducibility.';
-    }
+  const FLYER_BASE = 'https://apim-n1ai-use2-flyer.azure-api.net';
 
-    return 'I can help with DS animal model selection, experimental design, sample size calculations, ARRIVE compliance, and RRID identification. Ask me about specific models or research guidelines!';
+  const DS_SYSTEM_PROMPT = {
+    role: 'system',
+    content: `You are an expert research assistant specializing in Down syndrome (DS) animal models and experimental design. Your expertise includes:\n\n- Down syndrome mouse models (Ts65Dn, Tc1, Dp(16)1Yey, Dp(17)1Yey)\n- Experimental design and statistical considerations\n- ARRIVE guidelines and reproducible research practices\n- Sample size calculations and power analysis\n- Behavioral and molecular endpoints\n- Immunology and interferon signaling in DS models\n\nProvide accurate, evidence-based information with comprehensive citations. Be concise but thorough. When discussing animal models, mention relevant phenotypes, advantages, limitations, and appropriate applications. Include PMID hyperlinks where known: ([Author et al., Year](https://pubmed.ncbi.nlm.nih.gov/PMID/)). Include RRID identifiers for animal models: Ts65Dn (RRID:IMSR_JAX:001924), Tc1 (RRID:IMSR_JAX:004924).`
   };
+
+  const callFlyerGPT55 = async (messages) => {
+    const apiKey = import.meta.env.VITE_FLYER_API_KEY;
+    if (!apiKey) throw new Error('VITE_FLYER_API_KEY not configured');
+    const url = `${FLYER_BASE}/openai/deployments/gpt-5.5/chat/completions?api-version=2024-10-21`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+      body: JSON.stringify({ messages, max_completion_tokens: 2000 })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`GPT-5.5 error ${response.status}: ${err?.error?.message || response.statusText}`);
+    }
+    const data = await response.json();
+    return data.choices[0].message.content;
+  };
+
+  const callFlyerClaudeOpus47 = async (messages) => {
+    const apiKey = import.meta.env.VITE_FLYER_API_KEY;
+    if (!apiKey) throw new Error('VITE_FLYER_API_KEY not configured');
+    const systemMsg = messages.find(m => m.role === 'system');
+    const chatMsgs = messages.filter(m => m.role !== 'system');
+    const url = `${FLYER_BASE}/anthropic/v1/messages`;
+    const body = { model: 'claude-opus-4-7', max_tokens: 2000, messages: chatMsgs };
+    if (systemMsg) body.system = systemMsg.content;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`Claude Opus 4.7 error ${response.status}: ${err?.error?.message || response.statusText}`);
+    }
+    const data = await response.json();
+    return (data.content || []).map(b => b.text || '').join('');
+  };
+
+
 
   const handleChat = async (userMessage) => {
     if (!userMessage.trim()) return;
-    
     setIsLoading(true);
-    setLoadingStatus('Sending to Azure OpenAI...');
+    const modelLabel = selectedModel === 'gpt-5.5' ? 'GPT-5.5' : 'Claude Opus 4.7';
+    setLoadingStatus(`Sending to ${modelLabel}...`);
     setChatInput('');
-    
     const newMessage = { role: 'user', content: userMessage };
     const updatedMessages = [...chatMessages, newMessage];
-    
-    // Add user message to chat immediately
     setChatMessages(updatedMessages);
-
     try {
-      // First, try calling backend (Azure OpenAI)
-      const backendUrl = import.meta.env.DEV 
-        ? '/api/chat'  // Vite proxy in dev mode
-        : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/chat`;  // Production backend from env
-      
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: updatedMessages
-        })
-      });
-
-      if (response.ok) {
-        setLoadingStatus('Verifying citations...');
-        const data = await response.json();
-        if (data.success && data.response) {
-          // Log verification report if available
-          if (data.verification) {
-            console.log('Citation verification:', data.verification);
-            setLoadingStatus(`Verified ${data.verification.verified}/${data.verification.totalCitations} citations`);
-          }
-          const assistantMessage = { 
-            role: 'assistant', 
-            content: data.response,
-            verification: data.verification // Store verification with message
-          };
-          setChatMessages([...updatedMessages, assistantMessage]);
-          setIsLoading(false);
-          setLoadingStatus('');
-          return;
-        }
-      } else {
-        // Handle error responses from backend
-        const errorData = await response.json().catch(() => ({}));
-        if (errorData.message) {
-          console.warn('Azure OpenAI error:', errorData.message);
-          // If it's a rate limit error, try HuggingFace fallback
-          if (errorData.message.toLowerCase().includes('rate limit') || 
-              errorData.message.toLowerCase().includes('quota') ||
-              errorData.message.toLowerCase().includes('429')) {
-            console.log('Azure OpenAI rate limit detected, trying HuggingFace fallback...');
-            setLoadingStatus('Azure limit - trying HuggingFace...');
-            
-            // Try HuggingFace fallback
-            const hfResponse = await callHuggingFaceAPI(userMessage);
-            if (hfResponse) {
-              const hfMessage = { 
-                role: 'assistant', 
-                content: '⚠️ **Azure OpenAI rate limit reached.** _Using HuggingFace Mistral-7B:_\n\n---\n\n' + hfResponse
-              };
-              setChatMessages([...updatedMessages, hfMessage]);
-              setIsLoading(false);
-              setLoadingStatus('');
-              return;
-            }
-            
-            // HuggingFace failed, try Groq
-            console.log('HuggingFace unavailable, trying Groq...');
-            setLoadingStatus('Trying Groq...');
-            const groqResponse = await callGroqAPI(userMessage);
-            if (groqResponse) {
-              const groqMessage = { 
-                role: 'assistant', 
-                content: '⚠️ **Azure and HuggingFace unavailable.** _Using Groq Llama 3.1:_\n\n---\n\n' + groqResponse
-              };
-              setChatMessages([...updatedMessages, groqMessage]);
-              setIsLoading(false);
-              setLoadingStatus('');
-              return;
-            }
-            
-            // Groq failed, use knowledge base
-            console.log('All AI services unavailable, using knowledge base...');
-            setLoadingStatus('Using knowledge base...');
-            const rateLimitMessage = { 
-              role: 'assistant', 
-              content: '⚠️ **All AI services rate limited.**\n\n_Using curated knowledge base response:_\n\n---\n\n' + simulateLLMResponse(userMessage)
-            };
-            setChatMessages([...updatedMessages, rateLimitMessage]);
-            setIsLoading(false);
-            setLoadingStatus('');
-            return;
-          }
-        }
-      }
-      
-      // Fallback: Backend unavailable, try HuggingFace then Grok then knowledge base
-      console.log('Backend unavailable, trying HuggingFace fallback...');
-      setLoadingStatus('Backend down - trying HuggingFace...');
-      
-      const hfResponse = await callHuggingFaceAPI(userMessage);
-      if (hfResponse) {
-        const hfMessage = { 
-          role: 'assistant', 
-          content: '⚠️ **Backend unavailable.** _Using HuggingFace Mistral-7B:_\n\n---\n\n' + hfResponse
-        };
-        setChatMessages([...updatedMessages, hfMessage]);
-        setIsLoading(false);
-        setLoadingStatus('');
-        return;
-      }
-      
-      // HuggingFace also failed, try Groq
-      console.log('HuggingFace unavailable, trying Groq...');
-      setLoadingStatus('Trying Groq...');
-      const groqResponse = await callGroqAPI(userMessage);
-      if (groqResponse) {
-        const groqMessage = { 
-          role: 'assistant', 
-          content: '⚠️ **Backend and HuggingFace unavailable.** _Using Groq Llama 3.1:_\n\n---\n\n' + groqResponse
-        };
-        setChatMessages([...updatedMessages, groqMessage]);
-        setIsLoading(false);
-        setLoadingStatus('');
-        return;
-      }
-      
-      // All AI services failed, use knowledge base
-      console.log('All AI services unavailable, using knowledge base fallback...');
-      setLoadingStatus('Using knowledge base...');
-      const mockResponse = simulateLLMResponse(userMessage);
-      const assistantMessage = { role: 'assistant', content: mockResponse };
-      setChatMessages([...updatedMessages, assistantMessage]);
-      
+      const messagesWithSystem = chatMessages.some(m => m.role === 'system')
+        ? updatedMessages
+        : [DS_SYSTEM_PROMPT, ...updatedMessages];
+      const responseText = selectedModel === 'gpt-5.5'
+        ? await callFlyerGPT55(messagesWithSystem)
+        : await callFlyerClaudeOpus47(messagesWithSystem);
+      setChatMessages([...updatedMessages, { role: 'assistant', content: responseText }]);
     } catch (error) {
       console.error('Chat error:', error);
-      
-      // Error fallback: Use domain-specific response
-      const fallbackResponse = simulateLLMResponse(userMessage);
-      const assistantMessage = { role: 'assistant', content: fallbackResponse };
-      setChatMessages([...updatedMessages, assistantMessage]);
+      setChatMessages([...updatedMessages, {
+        role: 'assistant',
+        content: `⚠️ **Error contacting ${modelLabel}**: ${error.message}`
+      }]);
     } finally {
       setIsLoading(false);
       setLoadingStatus('');
     }
   };
 
-  const handleGuidelineCheck = (id) => {
-    setGuidelines(prev => prev.map(item => 
-      item.id === id ? { ...item, checked: !item.checked } : item
-    ));
-  };
-
   const exportChecklist = () => {
     const completedItems = guidelines.filter(g => g.checked);
-    const totalItems = guidelines.length;
-    const completionRate = Math.round((completedItems.length / totalItems) * 100);
-    
-    const exportText = `ARRIVE Guidelines Checklist Export
-Generated: ${new Date().toLocaleDateString()}
-Completion: ${completedItems.length}/${totalItems} items (${completionRate}%)
-
-COMPLETED ITEMS:
-${completedItems.map(item => `✓ ${item.category}: ${item.item}`).join('\n')}
-
-REMAINING ITEMS:
-${guidelines.filter(g => !g.checked).map(item => `☐ ${item.category}: ${item.item}`).join('\n')}
-
-DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
-`;
+    const exportText = `ARRIVE Guidelines Checklist\nGenerated: ${new Date().toLocaleString()}\n${'='.repeat(60)}\n\nCOMPLETED ITEMS:\n${completedItems.map(item => `✓ ${item.category}: ${item.item}`).join('\n')}\n\nREMAINING ITEMS:\n${guidelines.filter(g => !g.checked).map(item => `☐ ${item.category}: ${item.item}`).join('\n')}\n\nDS Research Assistant - https://asathyanesan.github.io/ds-research-tool\n`;
 
     const blob = new Blob([exportText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -458,7 +260,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <p>• Verified Citations</p>
               <p>• Content Verification</p>
               <p className="mt-2 text-[10px] text-blue-600">
-                <span className="font-semibold">AI:</span> Azure OpenAI → HuggingFace → Groq → Knowledge Base
+                <span className="font-semibold">AI:</span> GPT-5.5 &amp; Claude Opus 4.7 via FlyerGPT
               </p>
             </div>
           </div>
@@ -846,7 +648,12 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               {/* Chat Header with Download Options */}
               <div className="border-b p-4 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div>
-                  <p className="text-sm text-gray-600">💬 Powered by Azure OpenAI GPT-5.1 with verified PubMed citations</p>
+                <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : 'Claude Opus 4.7'}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-gray-500">Model:</span>
+                  <button onClick={() => setSelectedModel('gpt-5.5')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.5' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.5</button>
+                  <button onClick={() => setSelectedModel('claude-opus-4-7')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'claude-opus-4-7' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>Claude Opus 4.7</button>
+                </div>
                   <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
                 </div>
                 {chatMessages.length > 0 && (
