@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download, FileDown, Menu, X } from 'lucide-react';
+import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download, FileDown, Menu, X, ZoomIn } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 function App() {
   const [activeTab, setActiveTab] = useState('models');
@@ -11,6 +11,7 @@ function App() {
   const [loadingStatus, setLoadingStatus] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt-5.5');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [deepDive, setDeepDive] = useState(false);
   const [modelTypeFilter, setModelTypeFilter] = useState('');
   const [modelSpeciesFilter, setModelSpeciesFilter] = useState('');
   const [calcEffectSize, setCalcEffectSize] = useState('0.8');
@@ -199,7 +200,8 @@ function App() {
       .filter(w => w.length > 2 && !stopWords.has(w));
     if (!words.length) return bibliography.slice(0, topN);
     const scored = bibliography.map(entry => {
-      const text = ((entry.title || '') + ' ' + (entry.authors || '')).toLowerCase();
+      // Score against title + authors + abstract (first 600 chars of abstract to keep fast)
+      const text = ((entry.title || '') + ' ' + (entry.authors || '') + ' ' + (entry.abstract || '').slice(0, 600)).toLowerCase();
       const score = words.reduce((acc, w) => acc + (text.includes(w) ? 1 : 0), 0);
       return { entry, score };
     });
@@ -210,7 +212,7 @@ function App() {
       .map(s => s.entry);
   };
 
-  const buildSystemPrompt = (models, relevantRefs = []) => {
+  const buildSystemPrompt = (models, relevantRefs = [], withAbstracts = false) => {
     const jaxRrid = (url) => {
       const id = url?.split('/strain/')?.[1];
       return id ? `RRID:IMSR_JAX:${id}` : '';
@@ -238,10 +240,17 @@ function App() {
     });
 
     // Query-relevant papers from the full bibliography (deduplicated)
+    // Abstracts only included when deepDive mode is active (caller passes withAbstracts=true)
     const extraRefs = relevantRefs
       .filter(r => !seenPmids.has(String(r.pmid)))
-      .map(r => `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"`);
-
+      .map(r => {
+        const base = `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"`;
+        if (withAbstracts && r.abstract) {
+          const snippet = r.abstract.slice(0, 600).trimEnd();
+          return `${base}\n   Abstract: ${snippet}${r.abstract.length > 600 ? '…' : ''}`;
+        }
+        return base;
+      });
     const allBibEntries = [...modelBibEntries, ...extraRefs];
     const citationPool = allBibEntries.map((e, i) => `[${i + 1}] ${e}`).join('\n');
 
@@ -353,8 +362,8 @@ ${allModelsList}
     const updatedMessages = [...chatMessages, newMessage];
     setChatMessages(updatedMessages);
     try {
-      const relevantRefs = getRelevantRefs(userMessage);
-      const systemPrompt = buildSystemPrompt(animalModels, relevantRefs);
+      const relevantRefs = getRelevantRefs(userMessage, deepDive ? 12 : 30);
+      const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive);
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
@@ -996,6 +1005,20 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       <button onClick={() => setSelectedModel('gpt-5.5')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.5' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.5</button>
                       <button onClick={() => setSelectedModel('gpt-5.4-pro')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4-pro' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4-pro</button>
                       <button onClick={() => setSelectedModel('gpt-5.4')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4 ⚡</button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className="text-xs text-gray-500">Context:</span>
+                      <button
+                        onClick={() => setDeepDive(v => !v)}
+                        title="Deep Dive: include full abstracts for top 12 papers — richer context, more tokens"
+                        className={`text-xs px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
+                          deepDive ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        <ZoomIn size={11} />
+                        Deep Dive {deepDive ? 'ON' : 'OFF'}
+                      </button>
+                      {deepDive && <span className="text-xs text-purple-500">abstracts · top 12 refs</span>}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
                   </div>
