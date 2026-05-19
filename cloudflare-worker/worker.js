@@ -1,5 +1,6 @@
 const FLYER_BASE = 'https://apim-n1ai-use2-flyer.azure-api.net';
 const ALLOWED_ORIGIN = 'https://asathyanesan.github.io';
+const MONTHLY_LIMIT = 50;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -25,6 +26,27 @@ export default {
     // Only allow OpenAI-style endpoints
     if (!path.startsWith('/openai/')) {
       return new Response('Not found', { status: 404 });
+    }
+
+    // Monthly query budget (50 queries/month shared across all users)
+    // Requires QUERY_COUNTER KV namespace to be bound in wrangler.toml
+    if (env.QUERY_COUNTER) {
+      const now = new Date();
+      const monthKey = `ym:${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+      const countStr = await env.QUERY_COUNTER.get(monthKey);
+      const count = parseInt(countStr || '0');
+      if (count >= MONTHLY_LIMIT) {
+        return new Response(JSON.stringify({
+          error: {
+            message: `Monthly query limit reached (${MONTHLY_LIMIT} queries/month for this shared tool). The limit resets on the 1st of next month. For urgent research needs, contact the tool administrator.`
+          }
+        }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+        });
+      }
+      // Increment; expire after 35 days so old keys self-clean
+      await env.QUERY_COUNTER.put(monthKey, String(count + 1), { expirationTtl: 35 * 24 * 60 * 60 });
     }
 
     const upstreamHeaders = new Headers();

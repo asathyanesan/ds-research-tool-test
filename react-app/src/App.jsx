@@ -320,7 +320,7 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
       const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
-      if (response.status === 429) throw new Error('GPT-5.5 rate limit reached (1,000 tokens/min) — please wait ~60 seconds and try again.');
+      if (response.status === 429) throw new Error(msg || 'GPT-5.5 rate limit reached (1,000 tokens/min) — please wait ~60 seconds and try again.');
       throw new Error(`GPT-5.5 error ${response.status}: ${msg || response.statusText}`);
     }
     const data = await response.json();
@@ -338,7 +338,7 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
       const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
-      if (response.status === 429) throw new Error('GPT-5.4-pro rate limit reached — please wait a moment and try again.');
+      if (response.status === 429) throw new Error(msg || 'GPT-5.4-pro rate limit reached — please wait a moment and try again.');
       throw new Error(`GPT-5.4-pro error ${response.status}: ${msg || response.statusText}`);
     }
     const data = await response.json();
@@ -356,7 +356,7 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
       const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
-      if (response.status === 429) throw new Error('GPT-5.4 rate limit reached — please wait a moment and try again.');
+      if (response.status === 429) throw new Error(msg || 'GPT-5.4 rate limit reached — please wait a moment and try again.');
       throw new Error(`GPT-5.4 error ${response.status}: ${msg || response.statusText}`);
     }
     const data = await response.json();
@@ -1051,6 +1051,13 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       {deepDive && <span className="text-xs text-purple-500">abstracts · top 12 refs</span>}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
+                    <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — limited to 50 AI queries/month across all users. Please use thoughtfully.</p>
+                  </div>
+                  <div className="w-full mt-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-1.5">
+                    <span className="text-amber-500 text-xs mt-0.5">⚠</span>
+                    <p className="text-xs text-amber-700">
+                      <strong>Shared weekly budget: ~400 queries.</strong> Keep questions focused; use GPT-5.4 ⚡ for routine queries and save GPT-5.5 / GPT-5.4-pro for complex ones. Each query uses ~4,800–5,700 tokens of a 2M token/week allocation.
+                    </p>
                   </div>
                   {chatMessages.length > 0 && (
                     <div className="flex gap-1.5 flex-shrink-0">
