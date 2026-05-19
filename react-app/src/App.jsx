@@ -11,6 +11,13 @@ function App() {
   const [loadingStatus, setLoadingStatus] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt-5.5');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [modelTypeFilter, setModelTypeFilter] = useState('');
+  const [modelSpeciesFilter, setModelSpeciesFilter] = useState('');
+  const [calcEffectSize, setCalcEffectSize] = useState('0.8');
+  const [calcAlpha, setCalcAlpha] = useState('0.05');
+  const [calcPower, setCalcPower] = useState('0.80');
+  const [calcAttrition, setCalcAttrition] = useState('15');
+  const [calcGroups, setCalcGroups] = useState('2');
   const chatContainerRef = useRef(null);
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -56,6 +63,19 @@ function App() {
     setGuidelines(prev => prev.map(item =>
       item.id === id ? { ...item, checked: !item.checked } : item
     ));
+  };
+
+  const calculateSampleSize = () => {
+    const d = parseFloat(calcEffectSize) || 0.8;
+    const alpha = parseFloat(calcAlpha);
+    const power = parseFloat(calcPower);
+    const attrition = parseFloat(calcAttrition) / 100;
+    const groups = parseInt(calcGroups) || 2;
+    const zAlpha = alpha <= 0.01 ? 2.576 : alpha <= 0.05 ? 1.96 : 1.645;
+    const zBeta = power >= 0.95 ? 1.645 : power >= 0.90 ? 1.282 : 0.842;
+    const nRaw = Math.ceil(2 * Math.pow((zAlpha + zBeta) / d, 2));
+    const nWithAttrition = Math.ceil(nRaw / (1 - attrition));
+    return { nRaw, nWithAttrition, total: nWithAttrition * groups };
   };
 
   const WORKER_BASE = import.meta.env.VITE_WORKER_URL;
@@ -285,13 +305,17 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
     URL.revokeObjectURL(url);
   };
 
-  const filteredModels = animalModels.filter(model =>
-    model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (model.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (model.background || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (model.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (model.rrid || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredModels = animalModels.filter(model => {
+    const matchesSearch =
+      model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (model.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (model.background || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (model.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (model.rrid || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = !modelTypeFilter || (model.type || '') === modelTypeFilter;
+    const matchesSpecies = !modelSpeciesFilter || (model.species || '') === modelSpeciesFilter;
+    return matchesSearch && matchesType && matchesSpecies;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -395,16 +419,46 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
             <div className="max-w-7xl mx-auto">
           {activeTab === 'models' && (
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="mb-6">
-                <div className="relative">
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                Model data sourced from{' '}
+                <a href="https://github.com/abbash83/DS_Rodent_Models_Database" target="_blank" rel="noopener noreferrer" className="font-semibold underline">abbash83/DS_Rodent_Models_Database</a>
+                {' '}· Compiled from: Folz, A., Sloan, K., Roper, R.J. (2025). <em>Mouse Models of Down Syndrome</em>. Springer.
+              </div>
+              <div className="mb-4">
+                <div className="relative mb-3">
                   <Search className="absolute left-3 top-3 text-gray-400" size={20} />
                   <input
                     type="text"
-                    placeholder="Search models by name, phenotype, or application..."
+                    placeholder="Search models by name, type, background, or RRID..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <select value={modelTypeFilter} onChange={e => setModelTypeFilter(e.target.value)}
+                    className="text-sm p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="">All Types</option>
+                    {[...new Set(animalModels.map(m => m.type).filter(Boolean))].sort().map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <select value={modelSpeciesFilter} onChange={e => setModelSpeciesFilter(e.target.value)}
+                    className="text-sm p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="">All Species</option>
+                    {[...new Set(animalModels.map(m => m.species).filter(Boolean))].sort().map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  {(modelTypeFilter || modelSpeciesFilter) && (
+                    <button onClick={() => { setModelTypeFilter(''); setModelSpeciesFilter(''); }}
+                      className="text-sm px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                      Clear filters
+                    </button>
+                  )}
+                  <span className="ml-auto text-sm text-gray-500">
+                    {filteredModels.length} of {animalModels.length} models
+                  </span>
                 </div>
               </div>
 
@@ -421,8 +475,9 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                   >
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-lg font-semibold text-gray-800">{model.name}</h3>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <span className="text-xs bg-gray-200 px-2 py-1 rounded">{model.species}</span>
+                        {model.type && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">{model.type}</span>}
                         <a 
                           href={model.jackson_link} 
                           target="_blank" 
@@ -619,46 +674,87 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-blue-800 mb-3">💡 Design Recommendations</h3>
-                  <div className="space-y-3 text-sm text-blue-700">
-                    <div>
-                      <h4 className="font-medium">Sample Size Guidelines:</h4>
-                      <ul className="list-disc list-inside mt-1">
-                        <li>Behavioral studies: n≥10 per group</li>
-                        <li>Molecular studies: n≥6 per group</li>
-                        <li>Use G*Power for calculations</li>
-                        <li>Account for 10-20% attrition</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium">Experimental Design:</h4>
-                      <ul className="list-disc list-inside mt-1">
-                        <li>Include both sexes (sex as biological variable)</li>
-                        <li>Randomize cage assignments</li>
-                        <li>Blind investigators to treatment</li>
-                        <li>Use appropriate controls</li>
-                      </ul>
-                    </div>
+                  <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
+                    🧮 Sample Size Calculator
+                    <span className="text-xs font-normal text-blue-600">(two-group comparison, Cohen's d)</span>
+                  </h3>
 
-                    <div>
-                      <h4 className="font-medium">Common Endpoints by Model:</h4>
-                      <ul className="list-disc list-inside mt-1">
-                        <li>Ts65Dn: Morris Water Maze, Y-maze, NOR</li>
-                        <li>Tc1: Molecular markers, gene expression</li>
-                        <li>Dp16: Cytokines, interferon signaling</li>
-                      </ul>
+                  {/* Effect size presets */}
+                  <div className="mb-4">
+                    <label className="block text-xs font-semibold text-blue-700 mb-2">Effect Size (Cohen's d)</label>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {[['0.2','Small'],['0.5','Medium'],['0.8','Large / DS Behavioural'],['1.0','DS Molecular']].map(([v, label]) => (
+                        <button key={v} onClick={() => setCalcEffectSize(v)}
+                          className={`text-xs px-2 py-1 rounded transition-colors ${calcEffectSize === v ? 'bg-blue-500 text-white' : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
+                          {label}
+                        </button>
+                      ))}
                     </div>
+                    <input type="number" step="0.1" min="0.1" max="3" value={calcEffectSize}
+                      onChange={e => setCalcEffectSize(e.target.value)}
+                      className="w-full p-2 border border-blue-200 rounded text-sm bg-white" />
+                  </div>
 
+                  <div className="grid grid-cols-2 gap-3 mb-4">
                     <div>
-                      <h4 className="font-medium">RRID Usage:</h4>
-                      <ul className="list-disc list-inside mt-1">
-                        <li>Always include RRIDs in methods</li>
-                        <li>Required by most journals</li>
-                        <li>Ensures reproducibility</li>
-                      </ul>
+                      <label className="block text-xs font-semibold text-blue-700 mb-1">Alpha (α)</label>
+                      <select value={calcAlpha} onChange={e => setCalcAlpha(e.target.value)}
+                        className="w-full p-2 border border-blue-200 rounded text-sm bg-white">
+                        <option value="0.05">0.05</option>
+                        <option value="0.01">0.01</option>
+                        <option value="0.10">0.10</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-blue-700 mb-1">Power (1−β)</label>
+                      <select value={calcPower} onChange={e => setCalcPower(e.target.value)}
+                        className="w-full p-2 border border-blue-200 rounded text-sm bg-white">
+                        <option value="0.80">0.80</option>
+                        <option value="0.90">0.90</option>
+                        <option value="0.95">0.95</option>
+                      </select>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-blue-700 mb-1">Attrition: {calcAttrition}%</label>
+                      <input type="range" min="0" max="30" value={calcAttrition}
+                        onChange={e => setCalcAttrition(e.target.value)}
+                        className="w-full accent-blue-500 mt-2" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-blue-700 mb-1">Groups</label>
+                      <input type="number" min="2" max="6" value={calcGroups}
+                        onChange={e => setCalcGroups(e.target.value)}
+                        className="w-full p-2 border border-blue-200 rounded text-sm bg-white" />
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const r = calculateSampleSize();
+                    return (
+                      <div className="bg-white rounded-lg p-3 border border-blue-200">
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <div className="text-2xl font-bold text-blue-700">{r.nRaw}</div>
+                            <div className="text-xs text-gray-500">n/group (raw)</div>
+                          </div>
+                          <div>
+                            <div className="text-2xl font-bold text-orange-600">{r.nWithAttrition}</div>
+                            <div className="text-xs text-gray-500">n/group (+attrition)</div>
+                          </div>
+                          <div>
+                            <div className="text-2xl font-bold text-green-700">{r.total}</div>
+                            <div className="text-xs text-gray-500">total animals</div>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500 text-center border-t pt-2">
+                          DS guidelines: n≥10/group (behavioural) · n≥6/group (molecular)
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
