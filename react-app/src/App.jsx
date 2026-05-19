@@ -859,7 +859,6 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                     <div className="text-sm space-y-2 bg-white p-6 rounded-lg max-w-2xl mx-auto shadow-md">
                       <p className="font-semibold text-gray-700 mb-3">💡 Example Questions:</p>
                       <div className="text-left space-y-2">
-                        <p>• "Which DS model is best for cognitive studies?"</p>
                         <p>• "Explain Morris water maze testing in Ts65Dn mice"</p>
                         <p>• "Design tips for immunotherapy studies in DS models"</p>
                         <p>• "What is the RRID for Ts65Dn mice?"</p>
