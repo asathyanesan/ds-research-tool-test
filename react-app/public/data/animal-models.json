@@ -142,7 +142,7 @@
     "background": "B6129S",
     "trisomy": "Complete HSA21 (mosaic)",
     "genes": "~227 Hsa21 genes (mosaic)",
-    "description": "Contains freely segregating copy of Hsa21, with ~75% of Hsa21 in mouse. Mice are mosaic for the extra chromosome. The copy of Hsa21 has internal deletions and rearrangements (Gribble SM et al., 2013). https://pubmed.ncbi.nlm.nih.gov/23596509/.",
+    "description": "Contains freely segregating copy of Hsa21, with ~75% of Hsa21 in mouse. Mice are mosaic for the extra chromosome. The copy of Hsa21 has internal deletions and rearrangements (Gribble SM et al., 2013). BONE PHENOTYPE: male Tc1 mice show NO apparent bone phenotype — explicitly tested and found negative by Sherman et al. 2022 (PMID:35716916), in contrast to Ts65Dn and Dp16 which do show low bone mass. Do NOT attribute low bone mass or impaired fracture healing to Tc1.",
     "coords": "Human chr21 coordinates (hg19, per Gribble et al., 2013): Tc1-Hsa21 shows multiple rearrangements; major copy-number changes include deletion Chr21: 18734534–19762829 (~959 kb) and deletion Chr21:33640510–36370035 (~2.73 Mb); plus a duplicated segment Chr21:28,490,850–48,680,190 (~20.19 Mb) with additional complex internal CNVs/rearrangements (see Table 1 and Fig. 1 in Gribble et al., 2013)",
     "orthologs": "227 (Gribble et al., 2013 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3626651/ ) *includes duplications and anticipated single copy genes)",
     "jackson_link": "https://www.jax.org/strain/010801",
