@@ -283,6 +283,19 @@ ${kb}
 ## COMPLETE MODEL LIST (${models.length} models — do not invent details beyond what is listed):
 ${allModelsList}
 
+## CRITICAL MODEL DISAMBIGUATION — these pairs are frequently confused; treat them as entirely distinct models:
+
+**Tc1 vs TcMAC21** — both are transchromosomic mouse models carrying a freely segregating copy of human chromosome 21, but they are NOT interchangeable:
+| Feature | Tc1 | TcMAC21 |
+|---|---|---|
+| Hsa21 coverage | ~75% | ~93% |
+| Mosaicism | YES — mosaic; not all cells carry the extra chromosome | NO — non-mosaic |
+| Chromosome integrity | Internal deletions and rearrangements present (Gribble et al., 2013) | Mammalian Artificial Chromosome (MAC) — much cleaner representation |
+| Protein-coding Hsa21 orthologs | ~227 genes (includes duplications) | 144 orthologs (199 PCGs total, 581 including nPCGs) |
+| Key reference | Gribble et al. 2013 [PMID:23483870] | Kazuki et al. 2020 [PMID:32597754] |
+
+NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1" they mean the older, mosaic ~75% model; "TcMAC21" is the newer, non-mosaic ~93% model. Always name both in full when discussing transchromosomic models.
+
 ## CITATION FORMAT RULES:
 1. Cite ONLY papers from the curated DS bibliography above, using their PMID as given.
 2. Format citations as: Author et al. (Year) [PMID:XXXXXXX] — always use this exact square-bracket format; it becomes a clickable PubMed link automatically.
