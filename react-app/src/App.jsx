@@ -312,7 +312,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <p className="font-semibold text-blue-700 mb-1">💡 Features</p>
               <p>• Evidence-Based</p>
               <p>• ARRIVE Compliance</p>
-              <p>• Verified Citations</p>
+
               <p>• Content Verification</p>
               <p className="mt-2 text-[10px] text-blue-600">
                 <span className="font-semibold">AI:</span> GPT-5.5, GPT-5.4-pro &amp; GPT-5.4 via FlyerGPT
@@ -345,7 +345,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                 {activeTab === 'compare' && 'Compare selected models side-by-side'}
                 {activeTab === 'design' && 'Experimental design recommendations'}
                 {activeTab === 'guidelines' && 'Track your compliance with reporting standards'}
-                {activeTab === 'chat' && 'Get AI-powered research guidance with verified citations'}
+                {activeTab === 'chat' && 'Get AI-powered research guidance'}
               </p>
               </div>
             </div>
@@ -776,7 +776,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                           }`}>
                             {msg.role === 'assistant' && (
                               <div className="text-xs text-blue-600 mb-2 flex items-center gap-1 font-semibold">
-                                🤖 AI Assistant with Verified Citations
+                                🤖 AI Research Assistant
                               </div>
                             )}
                             {msg.role === 'user' && (
