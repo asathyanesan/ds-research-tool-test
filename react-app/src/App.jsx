@@ -244,14 +244,16 @@ function App() {
     });
 
     // Query-relevant papers from the full bibliography (deduplicated)
-    // Abstracts only included when deepDive mode is active (caller passes withAbstracts=true)
+    // Top 8 always get a 350-char snippet so the AI can see which models/findings are in each paper
+    // without needing Deep Dive. Deep Dive gives full 600-char snippet for all refs.
     const extraRefs = relevantRefs
       .filter(r => !seenPmids.has(String(r.pmid)))
-      .map(r => {
+      .map((r, idx) => {
         const base = `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"`;
-        if (withAbstracts && r.abstract) {
-          const snippet = r.abstract.slice(0, 600).trimEnd();
-          return `${base}\n   Abstract: ${snippet}${r.abstract.length > 600 ? '…' : ''}`;
+        const snippetLen = withAbstracts ? 600 : (idx < 8 ? 350 : 0);
+        if (snippetLen > 0 && r.abstract) {
+          const snippet = r.abstract.slice(0, snippetLen).trimEnd();
+          return `${base}\n   Abstract: ${snippet}${r.abstract.length > snippetLen ? '…' : ''}`;
         }
         return base;
       });
