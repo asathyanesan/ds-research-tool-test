@@ -84,6 +84,31 @@ function App() {
       const id = url?.split('/strain/')?.[1];
       return id ? `RRID:IMSR_JAX:${id}` : '';
     };
+    const pmidFromUrl = (url) => {
+      const m = url?.match(/pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)/);
+      return m ? m[1] : null;
+    };
+
+    // Build deduplicated verified bibliography from all models
+    const bibEntries = [];
+    const seenPmids = new Set();
+    models.forEach(m => {
+      // Primary publication per model
+      const pmid = pmidFromUrl(m.pubLink);
+      if (pmid && !seenPmids.has(pmid)) {
+        seenPmids.add(pmid);
+        bibEntries.push(`PMID:${pmid} — ${m.publication || ''} [re: ${m.name}]`);
+      }
+      // Curated key papers
+      (m.key_papers || []).forEach(p => {
+        if (p.pmid && !seenPmids.has(String(p.pmid))) {
+          seenPmids.add(String(p.pmid));
+          bibEntries.push(`PMID:${p.pmid} — ${p.authors} (${p.year}) "${p.title}" [re: ${m.name}]`);
+        }
+      });
+    });
+    const bibliography = bibEntries.map((e, i) => `[${i + 1}] ${e}`).join('\n');
+
     const kbModels = models.filter(m => m.key_papers && m.key_papers.length > 0);
     const kb = kbModels.length > 0
       ? kbModels.map(m => {
@@ -93,25 +118,29 @@ function App() {
         }).join('\n')
       : '(models loading)';
     const allModelsList = models.map(m => `${m.name} (${m.rrid || ''}): ${m.type}, ${m.background} background, ${m.orthologs || ''} orthologs`).join('\n');
+
     return {
       role: 'system',
       content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes experimental design, ARRIVE guidelines, sample size calculations, behavioural and molecular endpoints, and immunology/interferon signalling in DS.
 
-## AUTHORITATIVE KNOWLEDGE BASE — verified models with key papers:
+## VERIFIED BIBLIOGRAPHY — you MAY ONLY cite papers from this list:
+${bibliography}
+
+THIS IS A HARD CONSTRAINT. Do not cite any paper not in the list above. If a claim cannot be supported by a paper in this list, write: *(no verified citation available — search PubMed for: [suggested search terms])*
+
+## AUTHORITATIVE KNOWLEDGE BASE — verified models with full detail:
 ${kb}
 
 ## COMPLETE MODEL LIST (${models.length} models — do not invent details beyond what is listed):
 ${allModelsList}
 
-## CITATION RULES — strictly follow these to avoid hallucination:
-1. For the animal models above, you MUST use ONLY the "VERIFIED KEY PAPERS" listed. Do not invent or substitute other papers for these models.
-2. For any other citation, use this EXACT format: [Author et al., Year](pubmed-title:The Exact Real Title Of The Paper). The title must be the real title — do not guess or paraphrase it.
-3. If you are not highly confident a paper exists with that exact title and those exact authors, DO NOT cite it. Instead write: *(citation needed — search PubMed for [topic])*
-4. NEVER invent PMID numbers. NEVER fabricate author names or years.
-5. It is far better to give fewer citations you are confident about than many uncertain ones.
-6. When uncertain about a claim, say so explicitly: "Evidence suggests..." or "This has not been definitively established."
-
-For verified model papers, format them as: [Author et al., Year](pubmed-title:Exact Title From Knowledge Base Above).`
+## CITATION FORMAT RULES:
+1. Cite ONLY papers from the VERIFIED BIBLIOGRAPHY above, using their PMID as given.
+2. Format: Author et al. (Year) [PMID:XXXXXXX]
+3. NEVER invent or guess a PMID, author, title, or year.
+4. If no paper in the bibliography supports a claim, explicitly say so — do NOT fall back to training-data citations.
+5. It is far better to provide one verified citation than three invented ones.
+6. When uncertain about a factual claim, say: "Evidence suggests…" or "This has not been definitively established in the literature provided."`
     };
   };
 
