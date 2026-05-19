@@ -22,6 +22,11 @@ function App() {
     { id: 1, category: 'Study Design', item: 'Provide precise details of study design including primary research question', checked: false },
     { id: 2, category: 'Study Design', item: 'Explain how sample size was determined', checked: false },
     { id: 3, category: 'Animals', item: 'Provide details of animals used including species, strain, sex, age', checked: false },
+    { id: 11, category: 'Animals — Source & Strain', item: 'Report source and precise strain nomenclature (e.g., Ts65Dn JAX:001924 vs JAX:005252 have subtle phenotypic differences due to Pde6b status)', checked: false },
+    { id: 12, category: 'Animals — Genotype', item: 'Describe genetic modifications and genotyping method; include RRID of each strain used. Report number of generations maintained in colony (genetic drift risk)', checked: false },
+    { id: 13, category: 'Animals — Sex', item: 'Report sex of all animals used; significant sex differences exist in DS models (corticosterone, behavioral, immunological). Analyse and report sex as a biological variable', checked: false },
+    { id: 14, category: 'Animals — Developmental Stage', item: 'Report developmental stage at time of all procedures; DS phenotypes vary across lifespan. Specify whether neonatal, juvenile, adult, or aged cohorts were used', checked: false },
+    { id: 15, category: 'Animals — Age & Weight', item: 'Report exact age (±days) and weight at start of experiment and at key timepoints; DS models often differ in weight trajectory from wild-type littermates', checked: false },
     { id: 4, category: 'Animals', item: 'Explain housing and husbandry conditions', checked: false },
     { id: 5, category: 'Procedures', item: 'Describe procedures in detail for each experimental group', checked: false },
     { id: 6, category: 'Procedures', item: 'Describe experimental outcomes and how they were assessed', checked: false },
@@ -60,17 +65,24 @@ function App() {
       const id = url?.split('/strain/')?.[1];
       return id ? `RRID:IMSR_JAX:${id}` : '';
     };
-    const kb = models.length > 0
-      ? models.map(m =>
-          `**${m.name}** (${jaxRrid(m.jackson_link)}) — ${m.background} background, ${m.trisomy}, ${m.genes}. Phenotypes: ${m.phenotypes.join(', ')}. Best for: ${m.applications.join(', ')}. VERIFIED KEY PAPERS: ${m.key_papers.map(p => `${p.authors} (${p.year}) PMID:${p.pmid} — "${p.title}"`).join('; ')}`
-        ).join('\n')
+    const kbModels = models.filter(m => m.key_papers && m.key_papers.length > 0);
+    const kb = kbModels.length > 0
+      ? kbModels.map(m => {
+          const rrid = m.rrid || jaxRrid(m.jackson_link);
+          const papers = m.key_papers.map(p => `${p.authors} (${p.year}) PMID:${p.pmid} — "${p.title}"`).join('; ');
+          return `**${m.name}** (${rrid}) — ${m.background} background, ${m.type || m.trisomy || ''}, ${m.orthologs || m.genes || ''} Hsa21 orthologs. Description: ${m.description || ''}. VERIFIED KEY PAPERS: ${papers}`;
+        }).join('\n')
       : '(models loading)';
+    const allModelsList = models.map(m => `${m.name} (${m.rrid || ''}): ${m.type}, ${m.background} background, ${m.orthologs || ''} orthologs`).join('\n');
     return {
       role: 'system',
       content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes experimental design, ARRIVE guidelines, sample size calculations, behavioural and molecular endpoints, and immunology/interferon signalling in DS.
 
-## AUTHORITATIVE KNOWLEDGE BASE — these facts are exact and verified:
+## AUTHORITATIVE KNOWLEDGE BASE — verified models with key papers:
 ${kb}
+
+## COMPLETE MODEL LIST (${models.length} models — do not invent details beyond what is listed):
+${allModelsList}
 
 ## CITATION RULES — strictly follow these to avoid hallucination:
 1. For the animal models above, you MUST use ONLY the "VERIFIED KEY PAPERS" listed. Do not invent or substitute other papers for these models.
@@ -275,8 +287,10 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
   const filteredModels = animalModels.filter(model =>
     model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    model.phenotypes.some(p => p.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    model.applications.some(a => a.toLowerCase().includes(searchQuery.toLowerCase()))
+    (model.type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (model.background || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (model.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (model.rrid || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -433,36 +447,14 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       </div>
                     </div>
 
-                    <div className="mb-3">
-                      <span className="font-medium text-sm">Key Phenotypes:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {model.phenotypes.slice(0, 3).map((phenotype, idx) => (
-                          <span key={idx} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                            {phenotype}
-                          </span>
-                        ))}
-                        {model.phenotypes.length > 3 && (
-                          <span className="text-xs text-gray-500">+{model.phenotypes.length - 3} more</span>
-                        )}
+                    {model.description && (
+                      <div className="mb-3 text-sm text-gray-600 line-clamp-3">
+                        {model.description}
                       </div>
-                    </div>
-
-                    <div className="mb-3">
-                      <span className="font-medium text-sm">Best Applications:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {model.applications.slice(0, 2).map((app, idx) => (
-                          <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {app}
-                          </span>
-                        ))}
-                        {model.applications.length > 2 && (
-                          <span className="text-xs text-gray-500">+{model.applications.length - 2} more</span>
-                        )}
-                      </div>
-                    </div>
+                    )}
 
                     <div className="text-xs text-gray-500">
-                      Click to select for comparison • External link to Jackson Lab
+                      Click to select for comparison
                     </div>
                   </div>
                 ))}
@@ -529,32 +521,26 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                             </span>
                           </div>
                           
-                          <div className="mb-3">
-                            <h4 className="font-medium text-green-700">Advantages</h4>
-                            <ul className="text-sm list-disc list-inside">
-                              {model.advantages.map((adv, idx) => (
-                                <li key={idx}>{adv}</li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="mb-3">
-                            <h4 className="font-medium text-red-700">Limitations</h4>
-                            <ul className="text-sm list-disc list-inside">
-                              {model.limitations.map((limit, idx) => (
-                                <li key={idx}>{limit}</li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <h4 className="font-medium text-blue-700">Best Applications</h4>
-                            <ul className="text-sm list-disc list-inside">
-                              {model.applications.map((app, idx) => (
-                                <li key={idx}>{app}</li>
-                              ))}
-                            </ul>
-                          </div>
+                          {model.description && (
+                            <div className="mb-3">
+                              <h4 className="font-medium text-gray-700">Description</h4>
+                              <p className="text-sm text-gray-600 mt-1">{model.description}</p>
+                            </div>
+                          )}
+                          {model.key_papers && model.key_papers.length > 0 && (
+                            <div>
+                              <h4 className="font-medium text-blue-700">Key Papers</h4>
+                              <ul className="text-sm list-disc list-inside mt-1">
+                                {model.key_papers.map((p, idx) => (
+                                  <li key={idx}>
+                                    <a href={`https://pubmed.ncbi.nlm.nih.gov/${p.pmid}/`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                      {p.authors} ({p.year})
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
