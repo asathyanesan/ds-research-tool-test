@@ -10,4 +10,4 @@ compatibility_date = "2025-01-01"
 # Then replace the id below with the value returned
 [[kv_namespaces]]
 binding = "QUERY_COUNTER"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "73688b4e1153472688c857958f17244d"
