@@ -22,22 +22,14 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname + url.search;
 
-    // Only allow the two FlyerGPT endpoints
-    const isOpenAI = path.startsWith('/openai/');
-    const isAnthropic = path.startsWith('/anthropic/');
-    if (!isOpenAI && !isAnthropic) {
+    // Only allow OpenAI-style endpoints
+    if (!path.startsWith('/openai/')) {
       return new Response('Not found', { status: 404 });
     }
 
     const upstreamHeaders = new Headers();
     upstreamHeaders.set('Content-Type', 'application/json');
-
-    if (isOpenAI) {
-      upstreamHeaders.set('api-key', env.FLYER_API_KEY);
-    } else {
-      upstreamHeaders.set('x-api-key', env.FLYER_API_KEY);
-      upstreamHeaders.set('anthropic-version', '2023-06-01');
-    }
+    upstreamHeaders.set('api-key', env.FLYER_API_KEY_2);
 
     let upstream;
     try {
