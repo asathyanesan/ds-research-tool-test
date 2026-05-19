@@ -872,28 +872,29 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
           {/* Footer */}
           <footer className="bg-white border-t border-gray-200 p-4 text-center text-gray-500 text-sm">
-            <p>DS Research Assistant • Open Source • 
-              <a href="https://github.com/asathyanesan/ds-research-tool" className="text-blue-600 hover:underline ml-1">
+            <p>
+              DS Research Assistant • Open Source •{' '}
+              <a href="https://github.com/asathyanesan/ds-research-tool" className="text-blue-600 hover:underline">
                 View on GitHub
               </a>
             </p>
-            <p className="mt-2 flex items-center justify-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
               <span>🙏 Acknowledgement:</span>
-              <a 
-                href="https://www.udayton.edu" 
-                target="_blank" 
+              <a
+                href="https://www.udayton.edu"
+                target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-blue-600 hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-blue-600 hover:underline font-medium"
               >
-                <img 
-                  src="/ds-research-tool-test/ud-logo.png" 
-                  alt="University of Dayton" 
-                  className="h-6 w-6 rounded-full"
+                <img
+                  src="/ds-research-tool-test/ud-logo.png"
+                  alt="University of Dayton"
+                  className="h-5 w-5 rounded-full"
                 />
                 University of Dayton
               </a>
               <span>for providing access to FlyerGPT Azure OpenAI</span>
-            </p>
+            </div>
           </footer>
         </main>
       </div>
