@@ -1053,12 +1053,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                     <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
                     <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — limited to 50 AI queries/month across all users. Please use thoughtfully.</p>
                   </div>
-                  <div className="w-full mt-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-1.5">
-                    <span className="text-amber-500 text-xs mt-0.5">⚠</span>
-                    <p className="text-xs text-amber-700">
-                      <strong>Shared weekly budget: ~400 queries.</strong> Keep questions focused; use GPT-5.4 ⚡ for routine queries and save GPT-5.5 / GPT-5.4-pro for complex ones. Each query uses ~4,800–5,700 tokens of a 2M token/week allocation.
-                    </p>
-                  </div>
+
                   {chatMessages.length > 0 && (
                     <div className="flex gap-1.5 flex-shrink-0">
                       <button
