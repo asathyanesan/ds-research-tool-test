@@ -65,7 +65,7 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 2000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -83,7 +83,7 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 2000 })
+      body: JSON.stringify({ messages, max_tokens: 8000 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -95,12 +95,30 @@ function App() {
     return data.choices[0].message.content;
   };
 
+  const callFlyerGPT54 = async (messages) => {
+    if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
+    const url = `${WORKER_BASE}/openai/deployments/gpt-5.4/chat/completions?api-version=2024-10-21`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, max_tokens: 8000 })
+    });
+    if (!response.ok) {
+      const raw = await response.text().catch(() => '');
+      const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
+      if (response.status === 429) throw new Error('GPT-5.4 rate limit reached — please wait a moment and try again.');
+      throw new Error(`GPT-5.4 error ${response.status}: ${msg || response.statusText}`);
+    }
+    const data = await response.json();
+    return data.choices[0].message.content;
+  };
+
 
 
   const handleChat = async (userMessage) => {
     if (!userMessage.trim()) return;
     setIsLoading(true);
-    const modelLabel = selectedModel === 'gpt-5.5' ? 'GPT-5.5' : 'GPT-5.4-pro';
+    const modelLabel = selectedModel === 'gpt-5.5' ? 'GPT-5.5' : selectedModel === 'gpt-5.4-pro' ? 'GPT-5.4-pro' : 'GPT-5.4';
     setLoadingStatus(`Sending to ${modelLabel}...`);
     setChatInput('');
     const newMessage = { role: 'user', content: userMessage };
@@ -110,7 +128,9 @@ function App() {
       const messagesWithSystem = [DS_SYSTEM_PROMPT, newMessage];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
-        : await callFlyerGPT54Pro(messagesWithSystem);
+        : selectedModel === 'gpt-5.4-pro'
+          ? await callFlyerGPT54Pro(messagesWithSystem)
+          : await callFlyerGPT54(messagesWithSystem);
       setChatMessages([...updatedMessages, { role: 'assistant', content: responseText }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -252,7 +272,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <p>• Verified Citations</p>
               <p>• Content Verification</p>
               <p className="mt-2 text-[10px] text-blue-600">
-                <span className="font-semibold">AI:</span> GPT-5.5 &amp; GPT-5.4-pro via FlyerGPT
+                <span className="font-semibold">AI:</span> GPT-5.5, GPT-5.4-pro &amp; GPT-5.4 via FlyerGPT
               </p>
             </div>
           </div>
@@ -640,11 +660,12 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               {/* Chat Header with Download Options */}
               <div className="border-b p-4 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div>
-                <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : 'GPT-5.4-pro'}</p>
+                <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : selectedModel === 'gpt-5.4-pro' ? 'GPT-5.4-pro' : 'GPT-5.4 (Fast)'}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-gray-500">Model:</span>
                   <button onClick={() => setSelectedModel('gpt-5.5')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.5' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.5</button>
                   <button onClick={() => setSelectedModel('gpt-5.4-pro')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4-pro' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4-pro</button>
+                  <button onClick={() => setSelectedModel('gpt-5.4')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4 ⚡</button>
                 </div>
                   <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
                 </div>
