@@ -55,9 +55,33 @@ function App() {
 
   const WORKER_BASE = import.meta.env.VITE_WORKER_URL;
 
-  const DS_SYSTEM_PROMPT = {
-    role: 'system',
-    content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes:\n\n- Down syndrome mouse models (Ts65Dn, Tc1, Dp(16)1Yey, Dp(17)1Yey)\n- Experimental design and statistical considerations\n- ARRIVE guidelines and reproducible research practices\n- Sample size calculations and power analysis\n- Behavioural and molecular endpoints\n- Immunology and interferon signalling in DS models\n\nProvide accurate, evidence-based information with comprehensive citations. Be concise but thorough. When discussing animal models, mention relevant phenotypes, advantages, limitations, and appropriate applications.\n\nIMPORTANT — Citation format: Format every citation using this EXACT pattern: [Author et al., Year](pubmed-title:Full Exact Title Of The Paper). The title must be the real, precise title of the paper. Example: [Reeves et al., 1995](pubmed-title:A mouse model for Down syndrome exhibits learning and behaviour deficits). The app will automatically look up the real PubMed ID using the title. DO NOT use PMID numbers or URLs directly. Include RRID identifiers for animal models: Ts65Dn (RRID:IMSR_JAX:001924), Tc1 (RRID:IMSR_JAX:004924).`
+  const buildSystemPrompt = (models) => {
+    const jaxRrid = (url) => {
+      const id = url?.split('/strain/')?.[1];
+      return id ? `RRID:IMSR_JAX:${id}` : '';
+    };
+    const kb = models.length > 0
+      ? models.map(m =>
+          `**${m.name}** (${jaxRrid(m.jackson_link)}) — ${m.background} background, ${m.trisomy}, ${m.genes}. Phenotypes: ${m.phenotypes.join(', ')}. Best for: ${m.applications.join(', ')}. VERIFIED KEY PAPERS: ${m.key_papers.map(p => `${p.authors} (${p.year}) PMID:${p.pmid} — "${p.title}"`).join('; ')}`
+        ).join('\n')
+      : '(models loading)';
+    return {
+      role: 'system',
+      content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes experimental design, ARRIVE guidelines, sample size calculations, behavioural and molecular endpoints, and immunology/interferon signalling in DS.
+
+## AUTHORITATIVE KNOWLEDGE BASE — these facts are exact and verified:
+${kb}
+
+## CITATION RULES — strictly follow these to avoid hallucination:
+1. For the animal models above, you MUST use ONLY the "VERIFIED KEY PAPERS" listed. Do not invent or substitute other papers for these models.
+2. For any other citation, use this EXACT format: [Author et al., Year](pubmed-title:The Exact Real Title Of The Paper). The title must be the real title — do not guess or paraphrase it.
+3. If you are not highly confident a paper exists with that exact title and those exact authors, DO NOT cite it. Instead write: *(citation needed — search PubMed for [topic])*
+4. NEVER invent PMID numbers. NEVER fabricate author names or years.
+5. It is far better to give fewer citations you are confident about than many uncertain ones.
+6. When uncertain about a claim, say so explicitly: "Evidence suggests..." or "This has not been definitively established."
+
+For verified model papers, format them as: [Author et al., Year](pubmed-title:Exact Title From Knowledge Base Above).`
+    };
   };
 
   const callFlyerGPT55 = async (messages) => {
@@ -66,7 +90,7 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000, temperature: 0.3 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -84,7 +108,7 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000, temperature: 0.3 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -102,7 +126,7 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000, temperature: 0.3 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -151,7 +175,8 @@ function App() {
     const updatedMessages = [...chatMessages, newMessage];
     setChatMessages(updatedMessages);
     try {
-      const messagesWithSystem = [DS_SYSTEM_PROMPT, newMessage];
+      const systemPrompt = buildSystemPrompt(animalModels);
+      const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
         : selectedModel === 'gpt-5.4-pro'
