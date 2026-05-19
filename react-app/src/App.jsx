@@ -362,7 +362,15 @@ ${allModelsList}
     const updatedMessages = [...chatMessages, newMessage];
     setChatMessages(updatedMessages);
     try {
-      const relevantRefs = getRelevantRefs(userMessage, deepDive ? 12 : 30);
+      // Build RAG query from last 4 turns + current message so short follow-ups
+      // ("yes", "sex specific", "expand on that") still pull the right papers
+      const recentContext = chatMessages
+        .filter(m => m.role !== 'system')
+        .slice(-4)
+        .map(m => m.content)
+        .join(' ');
+      const ragQuery = `${recentContext} ${userMessage}`.trim();
+      const relevantRefs = getRelevantRefs(ragQuery, deepDive ? 12 : 30);
       const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive);
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
