@@ -204,8 +204,10 @@ function App() {
       // Pinned papers always win — guaranteed slot in context
       if (pinnedSet.has(String(entry.pmid))) return { entry, score: Infinity };
       if (!words.length) return { entry, score: 0 };
-      // Score against title + authors + abstract (first 600 chars)
-      const text = ((entry.title || '') + ' ' + (entry.authors || '') + ' ' + (entry.abstract || '').slice(0, 600)).toLowerCase();
+      // Score against title + authors + abstract + MeSH terms + author keywords
+      const meshText = (entry.mesh || []).join(' ');
+      const kwText = (entry.keywords || []).join(' ');
+      const text = ((entry.title || '') + ' ' + (entry.authors || '') + ' ' + (entry.abstract || '').slice(0, 600) + ' ' + meshText + ' ' + kwText).toLowerCase();
       const score = words.reduce((acc, w) => acc + (text.includes(w) ? 1 : 0), 0);
       return { entry, score };
     });
@@ -254,6 +256,10 @@ function App() {
         if (snippetLen > 0 && r.abstract) {
           const snippet = r.abstract.slice(0, snippetLen).trimEnd();
           return `${base}\n   Abstract: ${snippet}${r.abstract.length > snippetLen ? '…' : ''}`;
+        }
+        // Fall back to TL;DR for papers outside the abstract window
+        if (r.tldr) {
+          return `${base}\n   Summary: ${r.tldr}`;
         }
         return base;
       });

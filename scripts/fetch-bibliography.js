@@ -66,6 +66,115 @@ function fetchJson(url) {
   });
 }
 
+function fetchXml(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+async function fetchPubMedData(pmids) {
+  if (!pmids.length) return {};
+  const base = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
+  const url = `${base}efetch.fcgi?db=pubmed&id=${pmids.join(',')}&retmode=xml&rettype=abstract`;
+  const results = {};
+  try {
+    const xml = await fetchXml(url);
+    // Split into per-article blocks
+    const articleBlocks = xml.match(/<PubmedArticle>[\s\S]*?<\/PubmedArticle>/g) || [];
+    for (const block of articleBlocks) {
+      const pmidMatch = block.match(/<PMID[^>]*>(\d+)<\/PMID>/);
+      if (!pmidMatch) continue;
+      const pmid = pmidMatch[1];
+      // Abstract (handles structured abstracts with Label attrs)
+      const texts = [];
+      const re = /<AbstractText(?:[^>]*)>([\s\S]*?)<\/AbstractText>/g;
+      let m;
+      while ((m = re.exec(block)) !== null) {
+        const t = m[1].replace(/<[^>]+>/g, '').trim();
+        if (t) texts.push(t);
+      }
+      // MeSH descriptor names
+      const mesh = [];
+      const meshRe = /<DescriptorName[^>]*>([^<]+)<\/DescriptorName>/g;
+      let mm;
+      while ((mm = meshRe.exec(block)) !== null) {
+        const term = mm[1].replace(/<[^>]+>/g, '').trim();
+        if (term) mesh.push(term);
+      }
+      // Author-provided keywords
+      const keywords = [];
+      const kwRe = /<Keyword[^>]*>([^<]+)<\/Keyword>/g;
+      let kk;
+      while ((kk = kwRe.exec(block)) !== null) {
+        const kw = kk[1].replace(/<[^>]+>/g, '').trim();
+        if (kw) keywords.push(kw);
+      }
+      results[pmid] = {
+        abstract: texts.length ? texts.join(' ') : '',
+        mesh,
+        keywords,
+      };
+    }
+  } catch (e) {
+    console.warn(`  PubMed data fetch failed: ${e.message}`);
+  }
+  return results;
+}
+
+function postJson(url, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const u = new URL(url);
+    const options = {
+      hostname: u.hostname,
+      path: u.pathname + u.search,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+    };
+    const req = require('https').request(options, (res) => {
+      let out = '';
+      res.on('data', c => { out += c; });
+      res.on('end', () => { try { resolve(JSON.parse(out)); } catch(e) { reject(e); } });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+async function fetchSemanticScholarTldrs(pmids) {
+  // Semantic Scholar batch endpoint — up to 500 per call, free tier ~1 req/sec
+  const tldrs = {};
+  const BATCH = 500;
+  for (let i = 0; i < pmids.length; i += BATCH) {
+    const batch = pmids.slice(i, i + BATCH);
+    const batchNum = Math.floor(i / BATCH) + 1;
+    const totalBatches = Math.ceil(pmids.length / BATCH);
+    console.log(`  S2 TL;DR batch ${batchNum}/${totalBatches} (${batch.length} papers)...`);
+    try {
+      const result = await postJson(
+        'https://api.semanticscholar.org/graph/v1/paper/batch?fields=tldr',
+        { ids: batch.map(p => `PMID:${p}`) }
+      );
+      if (Array.isArray(result)) {
+        result.forEach((item, idx) => {
+          if (item && item.tldr && item.tldr.text) {
+            tldrs[batch[idx]] = item.tldr.text;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn(`  S2 TL;DR batch ${batchNum} failed: ${e.message}`);
+    }
+    await delay(1100); // S2 free tier: ~1 req/sec
+  }
+  return tldrs;
+}
+
 async function searchPubMed(query) {
   const base = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
   const url = `${base}esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=${MAX_RESULTS_PER_QUERY}&mindate=${MIN_DATE}&datetype=pdat&retmode=json`;
@@ -135,6 +244,7 @@ async function main() {
         authors: authorsShort,
         year,
         journal: s.source || '',
+        abstract: '',
       });
     }
 
@@ -147,6 +257,40 @@ async function main() {
     const yb = parseInt(b.year) || 0;
     return yb - ya;
   });
+
+  // Fetch abstracts, MeSH terms, and author keywords via efetch XML
+  const ABSTRACT_BATCH = 100;
+  console.log(`\nFetching PubMed data (abstracts + MeSH + keywords) in batches of ${ABSTRACT_BATCH}...`);
+  const pmidToData = {};
+  const allEntryPmids = entries.map(e => e.pmid);
+  for (let i = 0; i < allEntryPmids.length; i += ABSTRACT_BATCH) {
+    const batch = allEntryPmids.slice(i, i + ABSTRACT_BATCH);
+    const batchNum = Math.floor(i / ABSTRACT_BATCH) + 1;
+    const totalBatches = Math.ceil(allEntryPmids.length / ABSTRACT_BATCH);
+    console.log(`  PubMed batch ${batchNum}/${totalBatches} (${batch.length} records)...`);
+    const data = await fetchPubMedData(batch);
+    Object.assign(pmidToData, data);
+    await delay(DELAY_MS);
+  }
+
+  // Fetch TL;DR summaries from Semantic Scholar
+  console.log(`\nFetching TL;DR summaries from Semantic Scholar...`);
+  const pmidToTldr = await fetchSemanticScholarTldrs(allEntryPmids);
+  let withTldr = 0;
+
+  // Attach all enriched fields to entries
+  let withAbstract = 0;
+  entries.forEach(e => {
+    const d = pmidToData[e.pmid] || {};
+    e.abstract = d.abstract || '';
+    e.mesh = d.mesh || [];
+    e.keywords = d.keywords || [];
+    e.tldr = pmidToTldr[e.pmid] || '';
+    if (e.abstract) withAbstract++;
+    if (e.tldr) withTldr++;
+  });
+  console.log(`  Abstracts found: ${withAbstract}/${entries.length}`);
+  console.log(`  TL;DRs found:    ${withTldr}/${entries.length}`);
 
   const outPath = path.join(__dirname, '../react-app/public/data/bibliography.json');
   fs.writeFileSync(outPath, JSON.stringify(entries, null, 2));
