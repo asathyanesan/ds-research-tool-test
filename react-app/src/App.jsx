@@ -83,7 +83,7 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_tokens: 8000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -101,7 +101,7 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_tokens: 8000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
