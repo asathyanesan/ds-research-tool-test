@@ -1085,11 +1085,13 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                     <p className="text-xl mb-4">Ask me about DS animal models, experimental design, or research guidance!</p>
                     <div className="text-sm space-y-2 bg-white p-6 rounded-lg max-w-2xl mx-auto shadow-md">
                       <p className="font-semibold text-gray-700 mb-3">💡 Example Questions:</p>
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2">⚡ <strong>For best results:</strong> name the model, sex, age, and endpoint — e.g. <em>"bone phenotype in male Tc1 mice aged 3 months"</em> not <em>"bone deficits in DS mice"</em></p>
                       <div className="text-left space-y-2">
-                        <p>• "Explain Morris water maze testing in Ts65Dn mice"</p>
-                        <p>• "Design tips for immunotherapy studies in DS models"</p>
-                        <p>• "What is the RRID for Ts65Dn mice?"</p>
-                        <p>• "Compare Ts65Dn and Tc1 mouse models"</p>
+                        <p>• "What bone and craniofacial phenotypes have been reported in male Tc1 and Ts65Dn mice? Tabulate with citations."</p>
+                        <p>• "Compare interferon-pathway immune phenotypes in Tc1 vs TcMAC21 — key differences and supporting papers?"</p>
+                        <p>• "What n per group is needed to detect Morris water maze deficits in male Ts65Dn mice aged 3–4 months?"</p>
+                        <p>• "What hippocampal LTP deficits have been shown in Dp1Tyb mice? Cite specific papers."</p>
+                        <p>• "Which DS mouse models show cardiac septal defects, and what are the key papers?"</p>
                       </div>
                       <p className="text-xs text-gray-400 mt-4 pt-3 border-t text-center">
                         Citations are grounded in the{' '}
@@ -1179,6 +1181,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
               {/* Input Area */}
               <div className="border-t p-3 md:p-4 bg-white">
+                <p className="text-xs text-amber-600 mb-1.5">⚡ Name specific model(s) for best citation accuracy — e.g. <em>"bone phenotype in Tc1 and Ts65Dn"</em> not <em>"bone phenotype in DS mice"</em></p>
                 <div className="flex gap-2">
                   <input
                     type="text"
