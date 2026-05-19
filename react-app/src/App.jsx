@@ -45,11 +45,20 @@ function App() {
   const [animalModels, setAnimalModels] = useState([]);
 
   // Load animal models data
+  const [bibliography, setBibliography] = useState([]);
+
   useEffect(() => {
     fetch('/ds-research-tool-test/data/animal-models.json')
       .then(response => response.json())
       .then(data => setAnimalModels(data))
       .catch(error => console.error('Error loading animal models:', error));
+  }, []);
+
+  useEffect(() => {
+    fetch('/ds-research-tool-test/data/bibliography.json')
+      .then(response => response.json())
+      .then(data => setBibliography(data))
+      .catch(error => console.error('Error loading bibliography:', error));
   }, []);
 
   const handleModelSelect = (modelId) => {
@@ -79,7 +88,33 @@ function App() {
 
   const WORKER_BASE = import.meta.env.VITE_WORKER_URL;
 
-  const buildSystemPrompt = (models) => {
+  // Score bibliography entries by keyword overlap with a query string (client-side RAG)
+  const getRelevantRefs = (query, topN = 30) => {
+    if (!bibliography.length) return [];
+    const stopWords = new Set(['the','a','an','in','of','for','and','or','to','is','are',
+      'was','were','with','that','this','it','be','as','at','by','from','on','not',
+      'but','have','has','had','do','does','did','will','would','could','should',
+      'may','might','can','about','which','what','how','when','where','who',
+      'their','they','them','these','those','its','into','than','then','there',
+      'been','being','also','more','some','such','no','if','so','we','you']);
+    const words = query.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !stopWords.has(w));
+    if (!words.length) return bibliography.slice(0, topN);
+    const scored = bibliography.map(entry => {
+      const text = ((entry.title || '') + ' ' + (entry.authors || '')).toLowerCase();
+      const score = words.reduce((acc, w) => acc + (text.includes(w) ? 1 : 0), 0);
+      return { entry, score };
+    });
+    return scored
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score || (parseInt(b.entry.year) || 0) - (parseInt(a.entry.year) || 0))
+      .slice(0, topN)
+      .map(s => s.entry);
+  };
+
+  const buildSystemPrompt = (models, relevantRefs = []) => {
     const jaxRrid = (url) => {
       const id = url?.split('/strain/')?.[1];
       return id ? `RRID:IMSR_JAX:${id}` : '';
@@ -89,25 +124,30 @@ function App() {
       return m ? m[1] : null;
     };
 
-    // Build deduplicated verified bibliography from all models
-    const bibEntries = [];
+    // Verified papers anchored to each model (always included)
     const seenPmids = new Set();
+    const modelBibEntries = [];
     models.forEach(m => {
-      // Primary publication per model
       const pmid = pmidFromUrl(m.pubLink);
       if (pmid && !seenPmids.has(pmid)) {
         seenPmids.add(pmid);
-        bibEntries.push(`PMID:${pmid} — ${m.publication || ''} [re: ${m.name}]`);
+        modelBibEntries.push(`PMID:${pmid} — ${m.publication || ''} [re: ${m.name}]`);
       }
-      // Curated key papers
       (m.key_papers || []).forEach(p => {
         if (p.pmid && !seenPmids.has(String(p.pmid))) {
           seenPmids.add(String(p.pmid));
-          bibEntries.push(`PMID:${p.pmid} — ${p.authors} (${p.year}) "${p.title}" [re: ${m.name}]`);
+          modelBibEntries.push(`PMID:${p.pmid} — ${p.authors} (${p.year}) "${p.title}" [re: ${m.name}]`);
         }
       });
     });
-    const bibliography = bibEntries.map((e, i) => `[${i + 1}] ${e}`).join('\n');
+
+    // Query-relevant papers from the full bibliography (deduplicated)
+    const extraRefs = relevantRefs
+      .filter(r => !seenPmids.has(String(r.pmid)))
+      .map(r => `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"`);
+
+    const allBibEntries = [...modelBibEntries, ...extraRefs];
+    const citationPool = allBibEntries.map((e, i) => `[${i + 1}] ${e}`).join('\n');
 
     const kbModels = models.filter(m => m.key_papers && m.key_papers.length > 0);
     const kb = kbModels.length > 0
@@ -123,10 +163,10 @@ function App() {
       role: 'system',
       content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes experimental design, ARRIVE guidelines, sample size calculations, behavioural and molecular endpoints, and immunology/interferon signalling in DS.
 
-## VERIFIED BIBLIOGRAPHY — you MAY ONLY cite papers from this list:
-${bibliography}
+## VERIFIED CITATION POOL — you MAY ONLY cite papers from this list (${allBibEntries.length} papers, selected for relevance to this query):
+${citationPool}
 
-THIS IS A HARD CONSTRAINT. Do not cite any paper not in the list above. If a claim cannot be supported by a paper in this list, write: *(no verified citation available — search PubMed for: [suggested search terms])*
+THIS IS A HARD CONSTRAINT. Do not cite any paper not listed above. If a claim cannot be supported by a paper in this pool, write: *(no verified citation available — search PubMed for: [suggested search terms])*
 
 ## AUTHORITATIVE KNOWLEDGE BASE — verified models with full detail:
 ${kb}
@@ -135,10 +175,10 @@ ${kb}
 ${allModelsList}
 
 ## CITATION FORMAT RULES:
-1. Cite ONLY papers from the VERIFIED BIBLIOGRAPHY above, using their PMID as given.
+1. Cite ONLY papers from the VERIFIED CITATION POOL above, using their PMID as given.
 2. Format: Author et al. (Year) [PMID:XXXXXXX]
 3. NEVER invent or guess a PMID, author, title, or year.
-4. If no paper in the bibliography supports a claim, explicitly say so — do NOT fall back to training-data citations.
+4. If no paper in the pool supports a claim, say so — do NOT fall back to training-data citations.
 5. It is far better to provide one verified citation than three invented ones.
 6. When uncertain about a factual claim, say: "Evidence suggests…" or "This has not been definitively established in the literature provided."`
     };
@@ -235,7 +275,8 @@ ${allModelsList}
     const updatedMessages = [...chatMessages, newMessage];
     setChatMessages(updatedMessages);
     try {
-      const systemPrompt = buildSystemPrompt(animalModels);
+      const relevantRefs = getRelevantRefs(userMessage);
+      const systemPrompt = buildSystemPrompt(animalModels, relevantRefs);
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
