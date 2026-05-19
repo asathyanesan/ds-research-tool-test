@@ -18,6 +18,12 @@ function App() {
   const [calcPower, setCalcPower] = useState('0.80');
   const [calcAttrition, setCalcAttrition] = useState('15');
   const [calcGroups, setCalcGroups] = useState('2');
+  const [designQuestion, setDesignQuestion] = useState('');
+  const [designModel, setDesignModel] = useState('');
+  const [designStudyType, setDesignStudyType] = useState('');
+  const [designSampleSize, setDesignSampleSize] = useState('');
+  const [designDuration, setDesignDuration] = useState('');
+  const [designEndpoint, setDesignEndpoint] = useState('');
   const chatContainerRef = useRef(null);
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -84,6 +90,96 @@ function App() {
     const nRaw = Math.ceil(2 * Math.pow((zAlpha + zBeta) / d, 2));
     const nWithAttrition = Math.ceil(nRaw / (1 - attrition));
     return { nRaw, nWithAttrition, total: nWithAttrition * groups };
+  };
+
+  const downloadStudyCSV = () => {
+    const r = calculateSampleSize();
+    const modelName = animalModels.find(m => String(m.id) === designModel)?.name || designModel || '';
+    const studyTypeLabels = { cognitive: 'Cognitive/Behavioral', molecular: 'Molecular/Biochemical', therapeutic: 'Therapeutic intervention', pathophysiology: 'Pathophysiology' };
+    const rows = [
+      ['Field', 'Value'],
+      ['Research Question', designQuestion],
+      ['Animal Model', modelName],
+      ['Study Type', studyTypeLabels[designStudyType] || designStudyType],
+      ['Primary Endpoint', designEndpoint],
+      ['Study Duration', designDuration],
+      ['Sample Size per Group (planned)', designSampleSize],
+      ['', ''],
+      ['--- Sample Size Calculator ---', ''],
+      ["Effect Size (Cohen's d)", calcEffectSize],
+      ['Alpha (α)', calcAlpha],
+      ['Power (1−β)', calcPower],
+      ['Attrition (%)', calcAttrition],
+      ['Number of Groups', calcGroups],
+      ['', ''],
+      ['n/group (raw)', r.nRaw],
+      ['n/group (with attrition)', r.nWithAttrition],
+      ['Total Animals', r.total],
+      ['', ''],
+      ['Generated', new Date().toLocaleDateString()],
+      ['Source', 'https://asathyanesan.github.io/ds-research-tool-test/'],
+    ];
+    const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'study-design.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printStudyPDF = () => {
+    const r = calculateSampleSize();
+    const modelName = animalModels.find(m => String(m.id) === designModel)?.name || designModel || '—';
+    const studyTypeLabels = { cognitive: 'Cognitive/Behavioral', molecular: 'Molecular/Biochemical', therapeutic: 'Therapeutic intervention', pathophysiology: 'Pathophysiology' };
+    const html = `<!DOCTYPE html><html><head>
+    <title>Study Design — DS Research Tool</title>
+    <style>
+      body { font-family: Arial, sans-serif; max-width: 680px; margin: 36px auto; color: #222; font-size: 13px; }
+      h1 { font-size: 18px; color: #1d4ed8; border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; margin-bottom: 16px; }
+      h2 { font-size: 13px; font-weight: bold; color: #1d4ed8; margin: 20px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 6px 10px; border: 1px solid #ddd; }
+      td:first-child { font-weight: bold; background: #f0f4ff; width: 42%; }
+      .result-grid { display: flex; gap: 16px; justify-content: center; margin: 16px 0; }
+      .result-box { text-align: center; border: 2px solid #93c5fd; border-radius: 8px; padding: 12px 20px; min-width: 120px; }
+      .result-num { font-size: 28px; font-weight: bold; }
+      .result-label { font-size: 11px; color: #555; margin-top: 2px; }
+      .note { font-size: 11px; color: #666; text-align: center; margin-top: 4px; }
+      .footer { margin-top: 28px; font-size: 10px; color: #aaa; text-align: center; border-top: 1px solid #eee; padding-top: 8px; }
+    </style></head><body>
+    <h1>Study Design Summary</h1>
+    <h2>Study Details</h2>
+    <table>
+      <tr><td>Research Question</td><td>${designQuestion || '—'}</td></tr>
+      <tr><td>Animal Model</td><td>${modelName}</td></tr>
+      <tr><td>Study Type</td><td>${studyTypeLabels[designStudyType] || designStudyType || '—'}</td></tr>
+      <tr><td>Primary Endpoint</td><td>${designEndpoint || '—'}</td></tr>
+      <tr><td>Study Duration</td><td>${designDuration || '—'}</td></tr>
+      <tr><td>Planned n/group</td><td>${designSampleSize || '—'}</td></tr>
+    </table>
+    <h2>Sample Size Calculator</h2>
+    <p style="font-size:11px;color:#666;margin:0 0 8px">(Two-group comparison, Cohen&apos;s d method)</p>
+    <table>
+      <tr><td>Effect Size (Cohen&apos;s d)</td><td>${calcEffectSize}</td></tr>
+      <tr><td>Alpha (α)</td><td>${calcAlpha}</td></tr>
+      <tr><td>Power (1−β)</td><td>${calcPower}</td></tr>
+      <tr><td>Attrition</td><td>${calcAttrition}%</td></tr>
+      <tr><td>Number of Groups</td><td>${calcGroups}</td></tr>
+    </table>
+    <div class="result-grid">
+      <div class="result-box"><div class="result-num" style="color:#1d4ed8">${r.nRaw}</div><div class="result-label">n/group (raw)</div></div>
+      <div class="result-box"><div class="result-num" style="color:#ea580c">${r.nWithAttrition}</div><div class="result-label">n/group (+attrition)</div></div>
+      <div class="result-box"><div class="result-num" style="color:#16a34a">${r.total}</div><div class="result-label">total animals</div></div>
+    </div>
+    <p class="note">DS guidelines: n≥10/group (behavioural) · n≥6/group (molecular)</p>
+    <div class="footer">Generated ${new Date().toLocaleDateString()} · DS Research Tool · https://asathyanesan.github.io/ds-research-tool-test/</div>
+    </body></html>`;
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
   };
 
   const WORKER_BASE = import.meta.env.VITE_WORKER_URL;
@@ -663,6 +759,8 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                   <div>
                     <label className="block text-sm font-medium mb-2">Research Question</label>
                     <textarea
+                      value={designQuestion}
+                      onChange={e => setDesignQuestion(e.target.value)}
                       placeholder="What is your main research question? e.g., 'Does compound X improve learning deficits in Ts65Dn mice?'"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       rows="3"
@@ -672,7 +770,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2">Animal Model</label>
-                      <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      <select value={designModel} onChange={e => setDesignModel(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         <option value="">Select model...</option>
                         {animalModels.map(model => (
                           <option key={model.id} value={model.id}>{model.name}</option>
@@ -682,7 +780,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
                     <div>
                       <label className="block text-sm font-medium mb-2">Study Type</label>
-                      <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      <select value={designStudyType} onChange={e => setDesignStudyType(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         <option value="">Select type...</option>
                         <option value="cognitive">Cognitive/Behavioral</option>
                         <option value="molecular">Molecular/Biochemical</option>
@@ -697,6 +795,8 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       <label className="block text-sm font-medium mb-2">Sample Size per Group</label>
                       <input
                         type="number"
+                        value={designSampleSize}
+                        onChange={e => setDesignSampleSize(e.target.value)}
                         placeholder="e.g., 10"
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
@@ -706,6 +806,8 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       <label className="block text-sm font-medium mb-2">Study Duration</label>
                       <input
                         type="text"
+                        value={designDuration}
+                        onChange={e => setDesignDuration(e.target.value)}
                         placeholder="e.g., 8 weeks"
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
@@ -716,6 +818,8 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                     <label className="block text-sm font-medium mb-2">Primary Endpoint</label>
                     <input
                       type="text"
+                      value={designEndpoint}
+                      onChange={e => setDesignEndpoint(e.target.value)}
                       placeholder="e.g., Performance in Morris Water Maze"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
@@ -804,6 +908,24 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       </div>
                     );
                   })()}
+
+                  {/* Export buttons */}
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={downloadStudyCSV}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
+                    >
+                      <FileDown size={15} />
+                      Download CSV
+                    </button>
+                    <button
+                      onClick={printStudyPDF}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <Download size={15} />
+                      Print / Save PDF
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
