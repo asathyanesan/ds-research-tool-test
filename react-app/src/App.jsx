@@ -56,7 +56,7 @@ function App() {
 
   const DS_SYSTEM_PROMPT = {
     role: 'system',
-    content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes:\n\n- Down syndrome mouse models (Ts65Dn, Tc1, Dp(16)1Yey, Dp(17)1Yey)\n- Experimental design and statistical considerations\n- ARRIVE guidelines and reproducible research practices\n- Sample size calculations and power analysis\n- Behavioural and molecular endpoints\n- Immunology and interferon signalling in DS models\n\nProvide accurate, evidence-based information with comprehensive citations. Be concise but thorough. When discussing animal models, mention relevant phenotypes, advantages, limitations, and appropriate applications.\n\nIMPORTANT — Citation format: NEVER use direct PMID numbers in URLs as they are often inaccurate. Instead, always format citations as PubMed search links using author last name and year: ([Author et al., Year](https://pubmed.ncbi.nlm.nih.gov/?term=LastName[Author]+Year[PDAT])). For example: ([Reeves et al., 1995](https://pubmed.ncbi.nlm.nih.gov/?term=Reeves[Author]+1995[PDAT])). This guarantees users reach real, findable papers. Include RRID identifiers for animal models: Ts65Dn (RRID:IMSR_JAX:001924), Tc1 (RRID:IMSR_JAX:004924).`
+    content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes:\n\n- Down syndrome mouse models (Ts65Dn, Tc1, Dp(16)1Yey, Dp(17)1Yey)\n- Experimental design and statistical considerations\n- ARRIVE guidelines and reproducible research practices\n- Sample size calculations and power analysis\n- Behavioural and molecular endpoints\n- Immunology and interferon signalling in DS models\n\nProvide accurate, evidence-based information with comprehensive citations. Be concise but thorough. When discussing animal models, mention relevant phenotypes, advantages, limitations, and appropriate applications.\n\nIMPORTANT — Citation format: Format every citation using this EXACT pattern: [Author et al., Year](pubmed-title:Full Exact Title Of The Paper). The title must be the real, precise title of the paper. Example: [Reeves et al., 1995](pubmed-title:A mouse model for Down syndrome exhibits learning and behaviour deficits). The app will automatically look up the real PubMed ID using the title. DO NOT use PMID numbers or URLs directly. Include RRID identifiers for animal models: Ts65Dn (RRID:IMSR_JAX:001924), Tc1 (RRID:IMSR_JAX:004924).`
   };
 
   const callFlyerGPT55 = async (messages) => {
@@ -115,6 +115,31 @@ function App() {
 
 
 
+  const verifyCitations = async (text) => {
+    const regex = /\[([^\]]+)\]\(pubmed-title:([^)]+)\)/g;
+    const matches = [...text.matchAll(regex)];
+    if (matches.length === 0) return text;
+    let result = text;
+    for (const match of matches) {
+      const [fullMatch, linkText, title] = match;
+      try {
+        const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(title + '[Title]')}&retmode=json&retmax=1`;
+        const res = await fetch(searchUrl);
+        const data = await res.json();
+        const pmid = data.esearchresult?.idlist?.[0];
+        if (pmid) {
+          result = result.replace(fullMatch, `[${linkText}](https://pubmed.ncbi.nlm.nih.gov/${pmid}/)`);
+        } else {
+          result = result.replace(fullMatch, `[${linkText}](https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(title)})`);
+        }
+      } catch {
+        result = result.replace(fullMatch, `[${linkText}](https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(title)})`);
+      }
+      await new Promise(r => setTimeout(r, 350));
+    }
+    return result;
+  };
+
   const handleChat = async (userMessage) => {
     if (!userMessage.trim()) return;
     setIsLoading(true);
@@ -131,7 +156,9 @@ function App() {
         : selectedModel === 'gpt-5.4-pro'
           ? await callFlyerGPT54Pro(messagesWithSystem)
           : await callFlyerGPT54(messagesWithSystem);
-      setChatMessages([...updatedMessages, { role: 'assistant', content: responseText }]);
+      setLoadingStatus('Verifying citations...');
+      const verifiedText = await verifyCitations(responseText);
+      setChatMessages([...updatedMessages, { role: 'assistant', content: verifiedText }]);
     } catch (error) {
       console.error('Chat error:', error);
       setChatMessages([...updatedMessages, {
