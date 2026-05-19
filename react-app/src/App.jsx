@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download, FileDown } from 'lucide-react';
+import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download, FileDown, Menu, X } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 function App() {
   const [activeTab, setActiveTab] = useState('models');
@@ -10,6 +10,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt-5.5');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const chatContainerRef = useRef(null);
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -255,13 +256,28 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
+        {/* Mobile backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         {/* Left Sidebar Navigation */}
-        <aside className="w-64 bg-white shadow-xl flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-800 mb-1">T21RS DS Animal Models</h1>
-            <p className="text-xs text-gray-500">Assistant Tool</p>
+        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:z-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          {/* Sidebar Header */}
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-800 mb-1">T21RS DS Animal Models</h1>
+              <p className="text-xs text-gray-500">Assistant Tool</p>
+            </div>
+            <button
+              className="md:hidden text-gray-500 hover:text-gray-700"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X size={20} />
+            </button>
           </div>
 
           {/* Navigation Menu */}
@@ -276,7 +292,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               ].map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
                   className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-all ${
                     activeTab === tab.id
                       ? 'bg-blue-500 text-white shadow-md transform scale-105'
@@ -309,8 +325,15 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
         <main className="flex-1 overflow-hidden flex flex-col">
           {/* Top Header */}
           <header className="bg-white shadow-sm border-b border-gray-200 p-4">
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-2xl font-bold text-gray-800">
+            <div className="max-w-7xl mx-auto flex items-start gap-3">
+              <button
+                className="md:hidden mt-1 text-gray-600 hover:text-gray-800 flex-shrink-0"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu size={24} />
+              </button>
+              <div className="flex-1">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800">
                 {activeTab === 'models' && 'Animal Models Database'}
                 {activeTab === 'compare' && 'Model Comparison'}
                 {activeTab === 'design' && 'Study Design Guide'}
@@ -324,11 +347,12 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                 {activeTab === 'guidelines' && 'Track your compliance with reporting standards'}
                 {activeTab === 'chat' && 'Get AI-powered research guidance with verified citations'}
               </p>
+              </div>
             </div>
           </header>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto p-3 md:p-6">
             <div className="max-w-7xl mx-auto">
           {activeTab === 'models' && (
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -683,43 +707,45 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
           )}
 
           {activeTab === 'chat' && (
-            <div className="bg-white rounded-xl shadow-lg h-[calc(100vh-180px)] flex flex-col">
+            <div className="bg-white rounded-xl shadow-lg h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] flex flex-col">
               {/* Chat Header with Download Options */}
-              <div className="border-b p-4 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
-                <div>
-                <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : selectedModel === 'gpt-5.4-pro' ? 'GPT-5.4-pro' : 'GPT-5.4 (Fast)'}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">Model:</span>
-                  <button onClick={() => setSelectedModel('gpt-5.5')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.5' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.5</button>
-                  <button onClick={() => setSelectedModel('gpt-5.4-pro')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4-pro' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4-pro</button>
-                  <button onClick={() => setSelectedModel('gpt-5.4')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4 ⚡</button>
-                </div>
-                  <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
-                </div>
-                {chatMessages.length > 0 && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={downloadLastAnswer}
-                      className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                      title="Download last AI answer"
-                    >
-                      <FileDown size={16} />
-                      Last Answer
-                    </button>
-                    <button
-                      onClick={downloadConversation}
-                      className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                      title="Download entire conversation"
-                    >
-                      <Download size={16} />
-                      Full Chat
-                    </button>
+              <div className="border-b p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : selectedModel === 'gpt-5.4-pro' ? 'GPT-5.4-pro' : 'GPT-5.4 (Fast)'}</p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className="text-xs text-gray-500">Model:</span>
+                      <button onClick={() => setSelectedModel('gpt-5.5')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.5' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.5</button>
+                      <button onClick={() => setSelectedModel('gpt-5.4-pro')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4-pro' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4-pro</button>
+                      <button onClick={() => setSelectedModel('gpt-5.4')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4 ⚡</button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
                   </div>
-                )}
+                  {chatMessages.length > 0 && (
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={downloadLastAnswer}
+                        className="flex items-center gap-1 px-2 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs"
+                        title="Download last AI answer"
+                      >
+                        <FileDown size={14} />
+                        <span className="hidden sm:inline">Last Answer</span>
+                      </button>
+                      <button
+                        onClick={downloadConversation}
+                        className="flex items-center gap-1 px-2 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs"
+                        title="Download entire conversation"
+                      >
+                        <Download size={14} />
+                        <span className="hidden sm:inline">Full Chat</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Chat Messages Area - Larger */}
-              <div ref={chatContainerRef} className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50">
+              {/* Chat Messages Area */}
+              <div ref={chatContainerRef} className="flex-1 p-3 md:p-6 overflow-y-auto space-y-4 bg-gray-50">
                 {chatMessages.length === 0 ? (
                   <div className="text-center text-gray-500 mt-16">
                     <BookOpen size={64} className="mx-auto mb-4 text-gray-300" />
@@ -815,8 +841,8 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               </div>
 
               {/* Input Area */}
-              <div className="border-t p-4 bg-white">
-                <div className="flex gap-3">
+              <div className="border-t p-3 md:p-4 bg-white">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={chatInput}
