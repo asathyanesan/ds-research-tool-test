@@ -272,10 +272,10 @@ function App() {
       role: 'system',
       content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes experimental design, ARRIVE guidelines, sample size calculations, behavioural and molecular endpoints, and immunology/interferon signalling in DS.
 
-## CURATED DS LITERATURE — cite only from this list (${allBibEntries.length} papers from the DS rodent model bibliography, selected for relevance to this query):
+## CURATED DS LITERATURE — cite only from this list (${allBibEntries.length} papers from the DS Rodent Model Bibliography, a curated collection of DS rodent model literature compiled from PubMed and available at https://github.com/asathyanesan/ds-research-tool-test — selected for relevance to this query):
 ${citationPool}
 
-THIS IS A HARD CONSTRAINT. Do not cite any paper not listed above. If a claim cannot be supported by a paper in this list, write: *(not in the curated DS bibliography — suggested PubMed search: [suggested search terms])*
+THIS IS A HARD CONSTRAINT. Do not cite any paper not listed above. If a claim cannot be supported by a paper in this list, write: *(not in the curated DS bibliography — suggested PubMed search: [suggested search terms]. The full bibliography is at https://github.com/asathyanesan/ds-research-tool-test)*
 
 ## AUTHORITATIVE KNOWLEDGE BASE — verified models with full detail:
 ${kb}
@@ -1074,6 +1074,11 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                         <p>• "What is the RRID for Ts65Dn mice?"</p>
                         <p>• "Compare Ts65Dn and Tc1 mouse models"</p>
                       </div>
+                      <p className="text-xs text-gray-400 mt-4 pt-3 border-t text-center">
+                        Citations are grounded in the{' '}
+                        <a href="https://github.com/asathyanesan/ds-research-tool-test" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">DS Rodent Model Bibliography</a>
+                        {' '}— a curated PubMed collection of DS rodent model literature (1,200+ papers)
+                      </p>
                     </div>
                   </div>
                 ) : (
