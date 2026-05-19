@@ -176,7 +176,7 @@ ${allModelsList}
 
 ## CITATION FORMAT RULES:
 1. Cite ONLY papers from the VERIFIED CITATION POOL above, using their PMID as given.
-2. Format: Author et al. (Year) [PMID:XXXXXXX]
+2. Format citations as: Author et al. (Year) [PMID:XXXXXXX] — always use this exact square-bracket format; it becomes a clickable PubMed link automatically.
 3. NEVER invent or guess a PMID, author, title, or year.
 4. If no paper in the pool supports a claim, say so — do NOT fall back to training-data citations.
 5. It is far better to provide one verified citation than three invented ones.
@@ -240,29 +240,11 @@ ${allModelsList}
 
 
 
-  const verifyCitations = async (text) => {
-    const regex = /\[([^\]]+)\]\(pubmed-title:([^)]+)\)/g;
-    const matches = [...text.matchAll(regex)];
-    if (matches.length === 0) return text;
-    let result = text;
-    for (const match of matches) {
-      const [fullMatch, linkText, title] = match;
-      try {
-        const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(title + '[Title]')}&retmode=json&retmax=1`;
-        const res = await fetch(searchUrl);
-        const data = await res.json();
-        const pmid = data.esearchresult?.idlist?.[0];
-        if (pmid) {
-          result = result.replace(fullMatch, `[${linkText}](https://pubmed.ncbi.nlm.nih.gov/${pmid}/)`);
-        } else {
-          result = result.replace(fullMatch, `[${linkText}](https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(title)})`);
-        }
-      } catch {
-        result = result.replace(fullMatch, `[${linkText}](https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(title)})`);
-      }
-      await new Promise(r => setTimeout(r, 350));
-    }
-    return result;
+  // Convert [PMID:XXXXXXX] patterns to clickable PubMed markdown links
+  const linkifyPmids = (text) => {
+    // Match [PMID:digits] not already followed by ( (i.e. not already a markdown link target)
+    return text.replace(/\[PMID:(\d{5,9})\](?!\()/g,
+      (_, pmid) => `[[PMID:${pmid}]](https://pubmed.ncbi.nlm.nih.gov/${pmid}/)`);
   };
 
   const handleChat = async (userMessage) => {
@@ -283,9 +265,7 @@ ${allModelsList}
         : selectedModel === 'gpt-5.4-pro'
           ? await callFlyerGPT54Pro(messagesWithSystem)
           : await callFlyerGPT54(messagesWithSystem);
-      setLoadingStatus('Verifying citations...');
-      const verifiedText = await verifyCitations(responseText);
-      setChatMessages([...updatedMessages, { role: 'assistant', content: verifiedText }]);
+      setChatMessages([...updatedMessages, { role: 'assistant', content: linkifyPmids(responseText) }]);
     } catch (error) {
       console.error('Chat error:', error);
       setChatMessages([...updatedMessages, {
