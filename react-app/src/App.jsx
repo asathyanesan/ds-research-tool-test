@@ -90,7 +90,7 @@ For verified model papers, format them as: [Author et al., Year](pubmed-title:Ex
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000, temperature: 0.3 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -108,7 +108,7 @@ For verified model papers, format them as: [Author et al., Year](pubmed-title:Ex
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000, temperature: 0.3 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
