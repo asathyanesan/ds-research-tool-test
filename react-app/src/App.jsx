@@ -56,7 +56,7 @@ function App() {
 
   const DS_SYSTEM_PROMPT = {
     role: 'system',
-    content: `You are an expert research assistant specializing in Down syndrome (DS) animal models and experimental design. Your expertise includes:\n\n- Down syndrome mouse models (Ts65Dn, Tc1, Dp(16)1Yey, Dp(17)1Yey)\n- Experimental design and statistical considerations\n- ARRIVE guidelines and reproducible research practices\n- Sample size calculations and power analysis\n- Behavioral and molecular endpoints\n- Immunology and interferon signaling in DS models\n\nProvide accurate, evidence-based information with comprehensive citations. Be concise but thorough. When discussing animal models, mention relevant phenotypes, advantages, limitations, and appropriate applications. Include PMID hyperlinks where known: ([Author et al., Year](https://pubmed.ncbi.nlm.nih.gov/PMID/)). Include RRID identifiers for animal models: Ts65Dn (RRID:IMSR_JAX:001924), Tc1 (RRID:IMSR_JAX:004924).`
+    content: 'You are an expert on Down syndrome mouse models (Ts65Dn, Tc1, Dp16, Dp17), experimental design, ARRIVE guidelines, and DS research. Be concise. Include PubMed links and RRID identifiers when relevant.'
   };
 
   const callFlyerGPT55 = async (messages) => {
@@ -65,24 +65,24 @@ function App() {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 700 })
+      body: JSON.stringify({ messages, max_completion_tokens: 600 })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
       const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
-      if (response.status === 429) throw new Error('GPT-5.5 rate limit exceeded — please wait a moment and try again.');
+      if (response.status === 429) throw new Error('GPT-5.5 rate limit reached (1,000 tokens/min) — please wait ~60 seconds and try again.');
       throw new Error(`GPT-5.5 error ${response.status}: ${msg || response.statusText}`);
     }
     const data = await response.json();
     return data.choices[0].message.content;
   };
 
-  const callFlyerClaudeSonnet46 = async (messages) => {
+  const callFlyerClaudeOpus47 = async (messages) => {
     if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
     const systemMsg = messages.find(m => m.role === 'system');
     const chatMsgs = messages.filter(m => m.role !== 'system');
     const url = `${WORKER_BASE}/anthropic/v1/messages`;
-    const body = { model: 'claude-opus-4-7', max_tokens: 700, messages: chatMsgs };
+    const body = { model: 'claude-opus-4-7', max_tokens: 600, messages: chatMsgs };
     if (systemMsg) body.system = systemMsg.content;
     const response = await fetch(url, {
       method: 'POST',
@@ -92,8 +92,8 @@ function App() {
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
       const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
-      if (response.status === 429) throw new Error('Claude Sonnet 4.6 rate limit exceeded — please wait a moment and try again.');
-      throw new Error(`Claude Sonnet 4.6 error ${response.status}: ${msg || response.statusText}`);
+      if (response.status === 429) throw new Error('Claude Opus 4.7 rate limit reached (1,000 tokens/min) — please wait ~60 seconds and try again.');
+      throw new Error(`Claude Opus 4.7 error ${response.status}: ${msg || response.statusText}`);
     }
     const data = await response.json();
     return (data.content || []).map(b => b.text || '').join('');
@@ -111,12 +111,10 @@ function App() {
     const updatedMessages = [...chatMessages, newMessage];
     setChatMessages(updatedMessages);
     try {
-      const messagesWithSystem = chatMessages.some(m => m.role === 'system')
-        ? updatedMessages
-        : [DS_SYSTEM_PROMPT, ...updatedMessages];
+      const messagesWithSystem = [DS_SYSTEM_PROMPT, newMessage];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
-        : await callFlyerClaudeSonnet46(messagesWithSystem);
+        : await callFlyerClaudeOpus47(messagesWithSystem);
       setChatMessages([...updatedMessages, { role: 'assistant', content: responseText }]);
     } catch (error) {
       console.error('Chat error:', error);
