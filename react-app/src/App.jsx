@@ -186,7 +186,8 @@ function App() {
   const WORKER_BASE = import.meta.env.VITE_WORKER_URL;
 
   // Score bibliography entries by keyword overlap with a query string (client-side RAG)
-  const getRelevantRefs = (query, topN = 30) => {
+  // pinPmids: any PMIDs explicitly mentioned in conversation — always included regardless of score
+  const getRelevantRefs = (query, topN = 30, pinPmids = []) => {
     if (!bibliography.length) return [];
     const stopWords = new Set(['the','a','an','in','of','for','and','or','to','is','are',
       'was','were','with','that','this','it','be','as','at','by','from','on','not',
@@ -198,9 +199,12 @@ function App() {
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
       .filter(w => w.length > 2 && !stopWords.has(w));
-    if (!words.length) return bibliography.slice(0, topN);
+    const pinnedSet = new Set(pinPmids.map(String));
     const scored = bibliography.map(entry => {
-      // Score against title + authors + abstract (first 600 chars of abstract to keep fast)
+      // Pinned papers always win — guaranteed slot in context
+      if (pinnedSet.has(String(entry.pmid))) return { entry, score: Infinity };
+      if (!words.length) return { entry, score: 0 };
+      // Score against title + authors + abstract (first 600 chars)
       const text = ((entry.title || '') + ' ' + (entry.authors || '') + ' ' + (entry.abstract || '').slice(0, 600)).toLowerCase();
       const score = words.reduce((acc, w) => acc + (text.includes(w) ? 1 : 0), 0);
       return { entry, score };
@@ -285,7 +289,8 @@ ${allModelsList}
 3. NEVER invent or guess a PMID, author, title, or year.
 4. If no paper in the bibliography supports a claim, say so — do NOT fall back to training-data citations.
 5. It is far better to provide one verified citation than three invented ones.
-6. When uncertain about a factual claim, say: "Evidence suggests…" or "This has not been definitively established in the DS literature provided."`
+6. When uncertain about a factual claim, say: "Evidence suggests…" or "This has not been definitively established in the DS literature provided."
+7. IMPORTANT — abstracts: When a bibliography entry above includes an "Abstract:" field, that text IS the paper's content. Use it directly to answer questions about what that paper found or reported. NEVER say "I cannot access PubMed" or "I cannot check the abstract" — if the abstract is in the entry above, you already have it.`
     };
   };
 
@@ -370,7 +375,9 @@ ${allModelsList}
         .map(m => m.content)
         .join(' ');
       const ragQuery = `${recentContext} ${userMessage}`.trim();
-      const relevantRefs = getRelevantRefs(ragQuery, deepDive ? 12 : 30);
+      // Extract any PMIDs mentioned in conversation — pin them so they're always in context
+      const mentionedPmids = [...ragQuery.matchAll(/\b(\d{7,9})\b/g)].map(m => m[1]);
+      const relevantRefs = getRelevantRefs(ragQuery, deepDive ? 15 : 30, mentionedPmids);
       const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive);
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
