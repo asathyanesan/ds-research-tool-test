@@ -1057,7 +1057,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       {deepDive && <span className="text-xs text-purple-500">abstracts · top 12 refs</span>}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
-                    <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — limited to 50 AI queries/month across all users. Please use thoughtfully.</p>
+                    <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — limited to 50 AI queries/month. Please use thoughtfully.</p>
                   </div>
 
                   {chatMessages.length > 0 && (
