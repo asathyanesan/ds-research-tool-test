@@ -34,5 +34,5 @@ MIT — see [LICENSE](LICENSE).
 - Bibliography assembled from PubMed via NCBI E-utilities — [browse the full bibliography (1,200+ papers)](https://github.com/asathyanesan/ds-research-tool-test/blob/main/react-app/public/data/bibliography.json)
 - [Jackson Laboratory](https://www.jax.org/) for strain and RRID information
 - [ARRIVE guidelines](https://arriveguidelines.org/) consortium
-- AI powered by [FlyerGPT](https://flyergpt.com/) Azure APIM (GPT-5.5, GPT-5.4-pro, GPT-5.4)
+- AI powered by [University of Dayton](https://udayton.edu/) FlyerGPT Azure APIM (GPT-5.5, GPT-5.4-pro, GPT-5.4)
 
