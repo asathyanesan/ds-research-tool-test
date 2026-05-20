@@ -68,6 +68,14 @@ function App() {
       .catch(error => console.error('Error loading bibliography:', error));
   }, []);
 
+  const [clinicalPapers, setClinicalPapers] = useState([]);
+  useEffect(() => {
+    fetch('/ds-research-tool-test/data/clinical-papers.json')
+      .then(response => response.json())
+      .then(data => setClinicalPapers(data))
+      .catch(error => console.error('Error loading clinical papers:', error));
+  }, []);
+
   const handleModelSelect = (modelId) => {
     setSelectedModels(prev =>
       prev.includes(modelId) ? prev.filter(id => id !== modelId) : [...prev, modelId]
@@ -188,7 +196,10 @@ function App() {
   // Score bibliography entries by keyword overlap with a query string (client-side RAG)
   // pinPmids: any PMIDs explicitly mentioned in conversation — always included regardless of score
   const getRelevantRefs = (query, topN = 30, pinPmids = []) => {
-    if (!bibliography.length) return [];
+    // Merge rodent bibliography + clinical papers (human studies), deduplicating by PMID
+    const existingPmids = new Set(bibliography.map(e => String(e.pmid)));
+    const pool = [...bibliography, ...clinicalPapers.filter(e => !existingPmids.has(String(e.pmid)))];
+    if (!pool.length) return [];
     const stopWords = new Set(['the','a','an','in','of','for','and','or','to','is','are',
       'was','were','with','that','this','it','be','as','at','by','from','on','not',
       'but','have','has','had','do','does','did','will','would','could','should',
@@ -200,7 +211,7 @@ function App() {
       .split(/\s+/)
       .filter(w => w.length > 2 && !stopWords.has(w));
     const pinnedSet = new Set(pinPmids.map(String));
-    const scored = bibliography.map(entry => {
+    const scored = pool.map(entry => {
       // Pinned papers always win — guaranteed slot in context
       if (pinnedSet.has(String(entry.pmid))) return { entry, score: Infinity };
       if (!words.length) return { entry, score: 0 };
@@ -251,7 +262,8 @@ function App() {
     const extraRefs = relevantRefs
       .filter(r => !seenPmids.has(String(r.pmid)))
       .map((r, idx) => {
-        const base = `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"`;
+        const humanTag = r.population === 'human' ? ' [human study]' : '';
+        const base = `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"${humanTag}`;
         const snippetLen = withAbstracts ? 600 : (idx < 8 ? 350 : 0);
         if (snippetLen > 0 && r.abstract) {
           const snippet = r.abstract.slice(0, snippetLen).trimEnd();
@@ -278,17 +290,17 @@ function App() {
 
     return {
       role: 'system',
-      content: `You are an expert research assistant specialising in Down syndrome (DS) animal models and experimental design. Your expertise includes experimental design, ARRIVE guidelines, sample size calculations, behavioural and molecular endpoints, and immunology/interferon signalling in DS.
+      content: `You are an expert research assistant specialising in Down syndrome (DS) animal models, translational research, and experimental design. Your expertise includes experimental design, ARRIVE guidelines, sample size calculations, behavioural and molecular endpoints, immunology/interferon signalling in DS, and human–rodent translational concordance.
 
 ## SCOPE CONSTRAINT — HARD RULE:
 Only respond to queries that are directly about Down syndrome or have a clear, substantive intersection with Down syndrome research (e.g. trisomy 21, DS animal models, Hsa21, DYRK1A, interferon signalling in DS, Alzheimer's in DS, etc.). General biomedical questions are acceptable only if they are framed in the context of DS.
 If a query has no connection to Down syndrome, respond ONLY with: "I'm a Down syndrome research assistant — I can only help with queries related to DS or trisomy 21. Please ask something related to Down syndrome research."
 Do NOT attempt to answer off-topic queries even partially.
 
-## CURATED DS LITERATURE — cite only from this list (${allBibEntries.length} papers from the DS Rodent Model Bibliography, a curated collection of DS rodent model literature compiled from PubMed and available at https://github.com/asathyanesan/ds-research-tool-test/blob/main/react-app/public/data/bibliography.json — selected for relevance to this query):
+## CURATED DS LITERATURE — cite only from this list (${allBibEntries.length} papers; rodent model studies from the DS Rodent Model Bibliography plus clinical DS papers tagged [human study] — selected for relevance to this query). Use [human study] papers when answering questions about human concordance, translational relevance, or clinical findings:
 ${citationPool}
 
-THIS IS A HARD CONSTRAINT. Do not cite any paper not listed above. If a claim cannot be supported by a paper in this list, write: *(not in the curated DS bibliography — suggested PubMed search: [suggested search terms]. The full bibliography is at https://github.com/asathyanesan/ds-research-tool-test/blob/main/react-app/public/data/bibliography.json)*
+THIS IS A HARD CONSTRAINT. Do not cite any paper not listed above. If a claim cannot be supported by a paper in this list, write: *(not in the curated DS bibliography — suggested PubMed search: [suggested search terms])*
 
 ## AUTHORITATIVE KNOWLEDGE BASE — verified models with full detail:
 ${kb}
@@ -338,24 +350,6 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
     return data.choices[0].message.content;
   };
 
-  const callFlyerGPT54Pro = async (messages) => {
-    if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
-    const url = `${WORKER_BASE}/openai/deployments/gpt-5.4-pro/chat/completions?api-version=2024-10-21`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
-    });
-    if (!response.ok) {
-      const raw = await response.text().catch(() => '');
-      const msg = (() => { try { return JSON.parse(raw)?.error?.message || ''; } catch { return raw; } })();
-      if (response.status === 429) throw new Error(msg || 'GPT-5.4-pro rate limit reached — please wait a moment and try again.');
-      throw new Error(`GPT-5.4-pro error ${response.status}: ${msg || response.statusText}`);
-    }
-    const data = await response.json();
-    return data.choices[0].message.content;
-  };
-
   const callFlyerGPT54 = async (messages) => {
     if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
     const url = `${WORKER_BASE}/openai/deployments/gpt-5.4/chat/completions?api-version=2024-10-21`;
@@ -386,7 +380,7 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
   const handleChat = async (userMessage) => {
     if (!userMessage.trim()) return;
     setIsLoading(true);
-    const modelLabel = selectedModel === 'gpt-5.5' ? 'GPT-5.5' : selectedModel === 'gpt-5.4-pro' ? 'GPT-5.4-pro' : 'GPT-5.4';
+    const modelLabel = selectedModel === 'gpt-5.5' ? 'GPT-5.5' : 'GPT-5.4';
     setLoadingStatus(`Sending to ${modelLabel}...`);
     setChatInput('');
     const newMessage = { role: 'user', content: userMessage };
@@ -408,9 +402,7 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
-        : selectedModel === 'gpt-5.4-pro'
-          ? await callFlyerGPT54Pro(messagesWithSystem)
-          : await callFlyerGPT54(messagesWithSystem);
+        : await callFlyerGPT54(messagesWithSystem);
       setChatMessages([...updatedMessages, { role: 'assistant', content: linkifyPmids(responseText) }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -573,7 +565,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
               <p>• Content Verification</p>
               <p className="mt-2 text-[10px] text-blue-600">
-                <span className="font-semibold">AI:</span> GPT-5.5, GPT-5.4-pro &amp; GPT-5.4 via FlyerGPT
+                <span className="font-semibold">AI:</span> GPT-5.5 &amp; GPT-5.4 via FlyerGPT
               </p>
             </div>
           </div>
@@ -1048,11 +1040,10 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <div className="border-b p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : selectedModel === 'gpt-5.4-pro' ? 'GPT-5.4-pro' : 'GPT-5.4 (Fast)'}</p>
+                    <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : 'GPT-5.4 (Fast)'}</p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       <span className="text-xs text-gray-500">Model:</span>
                       <button onClick={() => setSelectedModel('gpt-5.5')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.5' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.5</button>
-                      <button onClick={() => setSelectedModel('gpt-5.4-pro')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4-pro' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4-pro</button>
                       <button onClick={() => setSelectedModel('gpt-5.4')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4 ⚡</button>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
