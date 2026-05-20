@@ -1225,8 +1225,12 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
           <footer className="bg-white border-t border-gray-200 p-4 text-center text-gray-500 text-sm">
             <p>
               DS Research Assistant • Open Source •{' '}
-              <a href="https://github.com/asathyanesan/ds-research-tool-test" className="text-blue-600 hover:underline">
-                View on GitHub
+              <a href="https://github.com/asathyanesan/ds-research-tool-test" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                GitHub
+              </a>
+              {' '}•{' '}
+              <a href="https://asathyanesan.github.io/ds-research-tool-test/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                Live Site
               </a>
             </p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
