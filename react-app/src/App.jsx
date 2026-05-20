@@ -1225,7 +1225,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
           <footer className="bg-white border-t border-gray-200 p-4 text-center text-gray-500 text-sm">
             <p>
               DS Research Assistant • Open Source •{' '}
-              <a href="https://github.com/asathyanesan/ds-research-tool" className="text-blue-600 hover:underline">
+              <a href="https://github.com/asathyanesan/ds-research-tool-test" className="text-blue-600 hover:underline">
                 View on GitHub
               </a>
             </p>
