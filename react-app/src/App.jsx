@@ -984,7 +984,15 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
           {activeTab === 'guidelines' && (
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold">ARRIVE Guidelines Checklist</h2>
+                <div>
+                  <h2 className="text-2xl font-semibold">ARRIVE Guidelines Checklist</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    DS-specific adaptation based on{' '}
+                    <a href="https://doi.org/10.1002/cpmo.79" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      Roper et al., 2020
+                    </a>
+                  </p>
+                </div>
                 <button
                   onClick={exportChecklist}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
