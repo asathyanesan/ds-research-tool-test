@@ -1,7 +1,6 @@
 # DS Research Assistant (alpha)
 
-A web tool for Down syndrome rodent model selection, experimental design, and ARRIVE-compliant reporting. Built with React, deployed on GitHub Pages.
-
+A web tool for Down syndrome rodent model selection, experimental design, and ARRIVE-compliant reporting.
 Live: [https://asathyanesan.github.io/ds-research-tool-test/](https://asathyanesan.github.io/ds-research-tool-test/)
 
 ---
