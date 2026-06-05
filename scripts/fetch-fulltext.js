@@ -27,11 +27,13 @@ const DELAY_MS     = HAS_API_KEY ? 105 : 370;
 const IDCONV_BATCH = 200;
 const MAX_METHODS  = 3500;  // target chars after condensation
 const MAX_RESULTS  = 5500;  // target chars after condensation
+const MAX_FIGURES  = 3000;  // target chars after condensation (figure legends)
 
-const args     = process.argv.slice(2);
-const DRY_RUN  = args.includes('--dry-run');
-const limitIdx = args.indexOf('--limit');
-const LIMIT    = limitIdx !== -1 ? parseInt(args[limitIdx + 1]) : Infinity;
+const args            = process.argv.slice(2);
+const DRY_RUN         = args.includes('--dry-run');
+const UPDATE_FIGURES  = args.includes('--update-figures');
+const limitIdx        = args.indexOf('--limit');
+const LIMIT           = limitIdx !== -1 ? parseInt(args[limitIdx + 1]) : Infinity;
 
 const OUT_PATH = path.join(__dirname, '../react-app/public/data/fulltext.json');
 
@@ -136,6 +138,49 @@ const METHODS_TITLES = [
   'study design', 'animals', 'subjects', 'patients', 'protocol'
 ];
 const RESULTS_TITLES = ['result', 'finding', 'outcome'];
+
+// ---- Figure legend extractor ----
+// Finds all <fig> elements anywhere in the JATS doc (including <floats-group>)
+// and extracts their label + caption text. PMC often places <fig> elements
+// outside the named <sec> blocks, so section extraction misses them.
+function extractFigureLegends(xml) {
+  if (!xml) return '';
+  const doc = xml.replace(/<!--[\s\S]*?-->/g, '').replace(/\r\n?/g, '\n');
+  const legends = [];
+  let pos = 0;
+
+  while (pos < doc.length) {
+    const figStart = doc.indexOf('<fig', pos);
+    if (figStart === -1) break;
+    // Must be <fig> or <fig , not <figure> or <figgroup>
+    const charAfter = doc[figStart + 4];
+    if (charAfter !== '>' && charAfter !== ' ' && charAfter !== '\n' && charAfter !== '/') {
+      pos = figStart + 4;
+      continue;
+    }
+    const figEnd = doc.indexOf('</fig>', figStart);
+    if (figEnd === -1) break;
+    const figBlock = doc.slice(figStart, figEnd + 6);
+
+    // Label (e.g. "Figure 1")
+    const labelMatch = figBlock.match(/<label>([\s\S]*?)<\/label>/);
+    const label = labelMatch ? labelMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+
+    // Caption — extract everything except the <title> sub-element (already in label area)
+    const captionMatch = figBlock.match(/<caption[^>]*>([\s\S]*?)<\/caption>/);
+    if (captionMatch) {
+      const captionRaw = captionMatch[1]
+        .replace(/<title>[\s\S]*?<\/title>/g, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&apos;/g, "'").replace(/&quot;/g, '"').replace(/&#[0-9]+;/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+      if (captionRaw) legends.push(label ? `${label}: ${captionRaw}` : captionRaw);
+    }
+    pos = figEnd + 6;
+  }
+  return legends.join(' | ');
+}
 
 // ---- Sentence-level condensation ----
 // Splits text into sentences, scores each by information density, then
@@ -268,12 +313,14 @@ async function fetchFullText(pmcid) {
   try {
     const xml = await fetchXml(url);
     if (!xml || xml.length < 500) return null;
-    const rawMethods = extractSection(xml, METHODS_TITLES);
-    const rawResults = extractSection(xml, RESULTS_TITLES);
-    if (!rawMethods && !rawResults) return null;
+    const rawMethods  = extractSection(xml, METHODS_TITLES);
+    const rawResults  = extractSection(xml, RESULTS_TITLES);
+    const rawFigures  = extractFigureLegends(xml);
+    if (!rawMethods && !rawResults && !rawFigures) return null;
     const methods = condenseSectionText(rawMethods, MAX_METHODS, METHODS_SIGNAL) || null;
     const results = condenseSectionText(rawResults, MAX_RESULTS, RESULTS_SIGNAL) || null;
-    return { methods, results };
+    const figures = condenseSectionText(rawFigures, MAX_FIGURES, RESULTS_SIGNAL) || null;
+    return { methods, results, figures };
   } catch { return null; }
 }
 
@@ -283,10 +330,11 @@ function saveOutput(papers, corpusSize) {
   const output = {
     generated: new Date().toISOString(),
     stats: {
-      corpus_size:          corpusSize,
-      papers_with_fulltext: vals.length,
-      with_methods_section: vals.filter(p => p.methods).length,
-      with_results_section: vals.filter(p => p.results).length,
+      corpus_size:           corpusSize,
+      papers_with_fulltext:  vals.length,
+      with_methods_section:  vals.filter(p => p.methods).length,
+      with_results_section:  vals.filter(p => p.results).length,
+      with_figures_section:  vals.filter(p => p.figures).length,
     },
     papers,
   };
@@ -298,6 +346,7 @@ async function main() {
   console.log('=== DS Research Tool - Full Text Fetcher ===');
   console.log(`NCBI API key: ${HAS_API_KEY ? 'YES (' + NCBI_API_KEY.slice(0, 6) + '...)' : 'NO (free tier ~3 req/sec)'}`);
   if (DRY_RUN)         console.log('DRY RUN - PMID->PMCID only, no XML fetch');
+  if (UPDATE_FIGURES)  console.log('UPDATE FIGURES - re-fetching cached papers to add figure legends');
   if (LIMIT < Infinity) console.log(`LIMIT: ${LIMIT} papers`);
   console.log('');
 
@@ -319,7 +368,46 @@ async function main() {
   console.log(`Total unique PMIDs in corpus: ${allPmids.length}`);
 
   const alreadyDone = new Set(Object.keys(existing.papers));
-  const limited     = allPmids.filter(p => !alreadyDone.has(p)).slice(0, LIMIT);
+
+  // --update-figures: re-process cached papers that have content but no figures field
+  if (UPDATE_FIGURES) {
+    const toUpdate = Object.entries(existing.papers)
+      .filter(([, v]) => v && (v.methods || v.results) && !v.figures)
+      .slice(0, LIMIT);
+    console.log(`Papers to update with figures: ${toUpdate.length}\n`);
+    if (!toUpdate.length) { console.log('Nothing to update.'); return; }
+
+    const papers = { ...existing.papers };
+    let done = 0;
+    for (const [pmid, entry] of toUpdate) {
+      const pct = (++done / toUpdate.length * 100).toFixed(1);
+      process.stdout.write(`  [${pct}%] PMID:${pmid} (PMC${entry.pmcid})... `);
+      const apiParam = HAS_API_KEY ? `&api_key=${NCBI_API_KEY}` : '';
+      const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=${entry.pmcid}&retmode=xml${apiParam}`;
+      try {
+        const xml = await fetchXml(url);
+        const rawFigures = xml ? extractFigureLegends(xml) : '';
+        const figures = condenseSectionText(rawFigures, MAX_FIGURES, RESULTS_SIGNAL) || null;
+        papers[pmid] = { ...entry, figures };
+        console.log(figures ? `figures:${figures.length}c` : 'no figures');
+      } catch (e) {
+        console.log(`ERROR: ${e.message}`);
+      }
+      if (done % 100 === 0) {
+        saveOutput(papers, allPmids.length);
+        console.log(`  [checkpoint saved at ${done}]\n`);
+      }
+      await delay(DELAY_MS);
+    }
+    saveOutput(papers, allPmids.length);
+    console.log(`\n=== Done (update-figures) ===`);
+    console.log(`Updated: ${done}`);
+    const sz = (fs.statSync(OUT_PATH).size / 1024 / 1024).toFixed(2);
+    console.log(`File size: ${sz} MB`);
+    return;
+  }
+
+  const limited = allPmids.filter(p => !alreadyDone.has(p)).slice(0, LIMIT);
   console.log(`To process this run: ${limited.length}  (${alreadyDone.size} already cached)\n`);
 
   if (!limited.length) { console.log('Nothing to do.'); return; }
