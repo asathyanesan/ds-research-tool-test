@@ -298,8 +298,10 @@ function App() {
               r.mesh?.length ? `MeSH: ${r.mesh.join('; ')}` : null,
               r.tldr ? `TL;DR: ${r.tldr}` : null,
             ].filter(Boolean).join('\n   ');
-            return `${base}\n   [Abstract only — full text not in PMC OA]\n   Full abstract: ${extraFields}`;
+            return `${base}\n   [NOT IN PMC OA — abstract only]\n   Abstract: ${extraFields}`;
           }
+          // No abstract either
+          return `${base}\n   [NOT IN PMC OA — no abstract available]`;
         }
         // Background papers: compressed in deep dive mode to conserve tokens
         const snippetLen = withAbstracts ? 350 : (idx < 8 ? 350 : 0);
@@ -378,9 +380,9 @@ If a user asks "which model is best", "what model should I use", "which model do
 ${withAbstracts && focusPmids.length > 0 ? `## DEEP DIVE MODE — ACTIVE (${focusPmids.length} focus paper${focusPmids.length > 1 ? 's' : ''})
 Papers marked [FOCUS] in the citation pool are the primary targets. For each [FOCUS] paper:
 1. If the entry shows [FULL TEXT AVAILABLE], the actual RESULTS SECTION and METHODS SECTION text is provided — treat this as the verbatim paper content. Quote specific sentences with quotation marks and label the section (Methods / Results).
-2. If only [Abstract only] is available, work from the abstract text. Be explicit about what is and isn't stated.
-3. Extract every numerical value present: n per group, p-values, effect sizes (Cohen's d, fold-change, %), confidence intervals, specific measurements.
-4. If a value or finding is NOT in the provided text, state explicitly: "Not stated in the available text."
+2. If the entry shows [NOT IN PMC OA — abstract only], do NOT attempt to extract section-level detail from the abstract. Instead respond: "Full text for this paper is not available in PMC Open Access. *— tolle, lege — follow the [[PMID:XXXXXXX]] link to access the full text directly.*" You may briefly summarise what the abstract states, but be explicit that section-level data (specific results, methods detail) cannot be provided.
+3. If the entry shows [NOT IN PMC OA — no abstract available], respond: "No text is available for this paper in the curated corpus. *— tolle, lege — follow the [[PMID:XXXXXXX]] link to access it directly.*"
+4. For [FULL TEXT AVAILABLE] papers: extract every numerical value present — n per group, p-values, effect sizes, confidence intervals, specific measurements. If a value is NOT in the provided text, state: "Not stated in the available text."
 5. Do not extrapolate or estimate values not present in the text.
 6. Close with: *— tolle, lege — follow the [[PMID:XXXXXXX]] link for complete methods, supplementary data, and figures.*` : ''}`
     };
