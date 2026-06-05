@@ -1262,21 +1262,22 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleChat(chatInput)}
+                    onKeyPress={(e) => e.key === 'Enter' && !isLoading && !fulltextLoading && handleChat(chatInput)}
                     placeholder="Ask about DS models, experimental design, RRIDs, sample sizes, citations..."
                     className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                    disabled={isLoading}
+                    disabled={isLoading || fulltextLoading}
                   />
                   <button
                     onClick={() => handleChat(chatInput)}
-                    disabled={isLoading || !chatInput.trim()}
+                    disabled={isLoading || fulltextLoading || !chatInput.trim()}
+                    title={fulltextLoading ? 'Loading full text index — please wait…' : undefined}
                     className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                      isLoading || !chatInput.trim()
+                      isLoading || fulltextLoading || !chatInput.trim()
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
                     }`}
                   >
-                    {isLoading ? 'Sending...' : 'Send'}
+                    {isLoading ? 'Sending…' : fulltextLoading ? 'Loading…' : 'Send'}
                   </button>
                 </div>
               </div>
