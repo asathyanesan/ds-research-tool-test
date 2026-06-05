@@ -76,6 +76,19 @@ function App() {
       .catch(error => console.error('Error loading clinical papers:', error));
   }, []);
 
+  // Full text (Results + Methods) — lazy-loaded only when Deep Dive is first activated
+  const [fulltext, setFulltext] = useState(null);
+  const [fulltextLoading, setFulltextLoading] = useState(false);
+  useEffect(() => {
+    if (deepDive && fulltext === null && !fulltextLoading) {
+      setFulltextLoading(true);
+      fetch('/ds-research-tool-test/data/fulltext.json')
+        .then(r => r.json())
+        .then(data => { setFulltext(data.papers || {}); setFulltextLoading(false); })
+        .catch(() => { setFulltext({}); setFulltextLoading(false); });
+    }
+  }, [deepDive, fulltext, fulltextLoading]);
+
   const handleModelSelect = (modelId) => {
     setSelectedModels(prev =>
       prev.includes(modelId) ? prev.filter(id => id !== modelId) : [...prev, modelId]
@@ -229,7 +242,7 @@ function App() {
       .map(s => s.entry);
   };
 
-  const buildSystemPrompt = (models, relevantRefs = [], withAbstracts = false) => {
+  const buildSystemPrompt = (models, relevantRefs = [], withAbstracts = false, focusPmids = [], fulltextMap = {}) => {
     const jaxRrid = (url) => {
       const id = url?.split('/strain/')?.[1];
       return id ? `RRID:IMSR_JAX:${id}` : '';
@@ -257,14 +270,39 @@ function App() {
     });
 
     // Query-relevant papers from the full bibliography (deduplicated)
-    // Top 8 always get a 350-char snippet so the AI can see which models/findings are in each paper
-    // without needing Deep Dive. Deep Dive gives full 600-char snippet for all refs.
+    // Top 8 always get a 350-char snippet so the AI can see which models/findings in each paper.
+    // Deep Dive: focus papers (cited PMIDs, up to 5) get full abstract + all metadata for
+    // verbatim extraction; background papers are compressed to save tokens.
+    const focusSet = new Set(focusPmids.map(String));
     const extraRefs = relevantRefs
       .filter(r => !seenPmids.has(String(r.pmid)))
       .map((r, idx) => {
         const humanTag = r.population === 'human' ? ' [human study]' : '';
-        const base = `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"${humanTag}`;
-        const snippetLen = withAbstracts ? 600 : (idx < 8 ? 350 : 0);
+        const isFocus = focusSet.has(String(r.pmid));
+        const focusTag = isFocus ? ' [FOCUS]' : '';
+        const base = `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"${humanTag}${focusTag}`;
+        // Focus papers in Deep Dive: full text sections first, then fall back to full abstract + metadata
+        if (isFocus) {
+          const ft = fulltextMap[String(r.pmid)];
+          if (ft && (ft.results || ft.methods)) {
+            const parts = [];
+            if (ft.results) parts.push(`RESULTS SECTION:\n${ft.results}`);
+            if (ft.methods) parts.push(`METHODS SECTION:\n${ft.methods}`);
+            return `${base}\n   [FULL TEXT AVAILABLE]\n   ${parts.join('\n   ')}`;
+          }
+          // Fall back to full abstract + all metadata when no full text
+          if (r.abstract) {
+            const extraFields = [
+              r.abstract,
+              r.keywords?.length ? `Keywords: ${r.keywords.join('; ')}` : null,
+              r.mesh?.length ? `MeSH: ${r.mesh.join('; ')}` : null,
+              r.tldr ? `TL;DR: ${r.tldr}` : null,
+            ].filter(Boolean).join('\n   ');
+            return `${base}\n   [Abstract only — full text not in PMC OA]\n   Full abstract: ${extraFields}`;
+          }
+        }
+        // Background papers: compressed in deep dive mode to conserve tokens
+        const snippetLen = withAbstracts ? 350 : (idx < 8 ? 350 : 0);
         if (snippetLen > 0 && r.abstract) {
           const snippet = r.abstract.slice(0, snippetLen).trimEnd();
           return `${base}\n   Abstract: ${snippet}${r.abstract.length > snippetLen ? '…' : ''}`;
@@ -300,7 +338,7 @@ Do NOT attempt to answer off-topic queries even partially.
 ## CURATED DS LITERATURE — cite only from this list (${allBibEntries.length} papers; rodent model studies from the DS Rodent Model Bibliography plus clinical DS papers tagged [human study] — selected for relevance to this query). Use [human study] papers when answering questions about human concordance, translational relevance, or clinical findings:
 ${citationPool}
 
-THIS IS A HARD CONSTRAINT. Do not cite any paper not listed above. If a claim cannot be supported by a paper in this list, write: *(not in the curated DS bibliography — suggested PubMed search: [suggested search terms])*
+THIS IS A HARD CONSTRAINT. Do not cite any paper not listed above. If a claim cannot be supported by a paper in this list, write: *(not in the curated DS bibliography)*. Do NOT suggest PubMed search strings — every paper cited above already has a clickable [[PMID:XXXXXXX]] link. When asked for more detail on a cited paper, exhaust all available abstract content first, then invite the user: *— tolle, lege — follow the [[PMID:XXXXXXX]] link above to read the full text.*
 
 ## AUTHORITATIVE KNOWLEDGE BASE — verified models with full detail:
 ${kb}
@@ -328,7 +366,23 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
 4. If no paper in the bibliography supports a claim, say so — do NOT fall back to training-data citations.
 5. It is far better to provide one verified citation than three invented ones.
 6. When uncertain about a factual claim, say: "Evidence suggests…" or "This has not been definitively established in the DS literature provided."
-7. IMPORTANT — abstracts: When a bibliography entry above includes an "Abstract:" field, that text IS the paper's content. Use it directly to answer questions about what that paper found or reported. NEVER say "I cannot access PubMed" or "I cannot check the abstract" — if the abstract is in the entry above, you already have it.`
+7. IMPORTANT — abstracts: When a bibliography entry above includes an "Abstract:" field, that text IS the paper's content. Use it directly to answer questions about what that paper found or reported. NEVER say "I cannot access PubMed" or "I cannot check the abstract" — if the abstract is in the entry above, you already have it. When asked to "look deeper" into a paper, quote the most relevant sentences verbatim from what is available, extract any numerical values (n, p-values, effect sizes, measurements), then close with: *— tolle, lege — follow the [[PMID:XXXXXXX]] link above for the full text.*
+
+## BEST MODEL DEFLECTION — HARD RULE:
+If a user asks "which model is best", "what model should I use", "which model do you recommend", "best DS model", or any variant seeking a single top-ranked model, do NOT name one model as superior. Instead:
+1. State warmly that every DS model has unique utility, strengths, and weaknesses — and that each has contributed distinct and valuable knowledge to the DS biomedical field.
+2. Redirect constructively: ask what the specific research question, phenotype of interest, age group, and primary endpoint are.
+3. Note briefly that the right choice depends on gene coverage (partial vs full trisomy), mosaicism, available phenotypic data, colony background, and translational concordance for the intended endpoint.
+4. You may summarise 2–3 model categories and their trade-offs, but do not rank them.
+
+${withAbstracts && focusPmids.length > 0 ? `## DEEP DIVE MODE — ACTIVE (${focusPmids.length} focus paper${focusPmids.length > 1 ? 's' : ''})
+Papers marked [FOCUS] in the citation pool are the primary targets. For each [FOCUS] paper:
+1. If the entry shows [FULL TEXT AVAILABLE], the actual RESULTS SECTION and METHODS SECTION text is provided — treat this as the verbatim paper content. Quote specific sentences with quotation marks and label the section (Methods / Results).
+2. If only [Abstract only] is available, work from the abstract text. Be explicit about what is and isn't stated.
+3. Extract every numerical value present: n per group, p-values, effect sizes (Cohen's d, fold-change, %), confidence intervals, specific measurements.
+4. If a value or finding is NOT in the provided text, state explicitly: "Not stated in the available text."
+5. Do not extrapolate or estimate values not present in the text.
+6. Close with: *— tolle, lege — follow the [[PMID:XXXXXXX]] link for complete methods, supplementary data, and figures.*` : ''}`
     };
   };
 
@@ -397,8 +451,9 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
       const ragQuery = `${recentContext} ${userMessage}`.trim();
       // Extract any PMIDs mentioned in conversation — pin them so they're always in context
       const mentionedPmids = [...ragQuery.matchAll(/\b(\d{7,9})\b/g)].map(m => m[1]);
-      const relevantRefs = getRelevantRefs(ragQuery, deepDive ? 15 : 30, mentionedPmids);
-      const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive);
+      const focusPmids = deepDive && mentionedPmids.length > 0 ? mentionedPmids.slice(0, 5) : [];
+      const relevantRefs = getRelevantRefs(ragQuery, deepDive ? 12 : 30, mentionedPmids);
+      const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive, focusPmids, fulltext || {});
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
@@ -1050,7 +1105,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       <span className="text-xs text-gray-500">Context:</span>
                       <button
                         onClick={() => setDeepDive(v => !v)}
-                        title="Deep Dive: include full abstracts for top 12 papers — richer context, more tokens"
+                        title="Deep Dive: cite specific papers (by PMID) to extract their full abstract verbatim — results, methods, p-values, effect sizes. Up to 5 focus papers; background refs are compressed to save tokens."
                         className={`text-xs px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
                           deepDive ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                         }`}
@@ -1058,7 +1113,15 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                         <ZoomIn size={11} />
                         Deep Dive {deepDive ? 'ON' : 'OFF'}
                       </button>
-                      {deepDive && <span className="text-xs text-purple-500">abstracts · top 12 refs</span>}
+                      {deepDive && (
+                        <span className="text-xs text-purple-500">
+                          {fulltextLoading
+                            ? 'loading full text…'
+                            : fulltext && Object.keys(fulltext).length > 0
+                              ? `full text: ${Object.keys(fulltext).length} papers · cite PMID → drill down`
+                              : 'cite a PMID → full extraction · up to 5 papers'}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
                     <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — limited to 50 AI queries/month. Please use thoughtfully.</p>

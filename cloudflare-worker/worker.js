@@ -1,16 +1,23 @@
 const FLYER_BASE = 'https://apim-n1ai-use2-flyer.azure-api.net';
-const ALLOWED_ORIGIN = 'https://asathyanesan.github.io';
+const ALLOWED_ORIGINS = new Set([
+  'https://asathyanesan.github.io',
+  'http://localhost:5173',
+  'http://localhost:4173',
+]);
 const MONTHLY_LIMIT = 50;
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+const corsHeaders = (origin) => ({
+  'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : 'https://asathyanesan.github.io',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
-};
+});
 
 export default {
   async fetch(request, env) {
+    const origin = request.headers.get('Origin') || '';
+    const CORS_HEADERS = corsHeaders(origin);
+
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
