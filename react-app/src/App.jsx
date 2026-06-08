@@ -1311,10 +1311,6 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <a href="https://github.com/asathyanesan/ds-research-tool-test" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                 GitHub
               </a>
-              {' '}•{' '}
-              <a href="https://asathyanesan.github.io/ds-research-tool-test/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                Live Site
-              </a>
             </p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
               <span>🙏 Acknowledgement:</span>
