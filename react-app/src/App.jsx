@@ -76,7 +76,16 @@ function App() {
       .catch(error => console.error('Error loading clinical papers:', error));
   }, []);
 
-  // Full text (Results + Methods) — lazy-loaded only when Deep Dive is first activated
+  // OA PMID set — eagerly loaded (15KB) so we can mark papers even without Deep Dive
+  const [oaPmids, setOaPmids] = useState(null);
+  useEffect(() => {
+    fetch('/ds-research-tool-test/data/fulltext-pmids.json')
+      .then(r => r.json())
+      .then(data => setOaPmids(new Set(data.map(String))))
+      .catch(() => setOaPmids(new Set()));
+  }, []);
+
+  // Full text (Results + Methods + Figures) — lazy-loaded only when Deep Dive is first activated
   const [fulltext, setFulltext] = useState(null);
   const [fulltextLoading, setFulltextLoading] = useState(false);
   useEffect(() => {
@@ -242,7 +251,7 @@ function App() {
       .map(s => s.entry);
   };
 
-  const buildSystemPrompt = (models, relevantRefs = [], withAbstracts = false, focusPmids = [], fulltextMap = {}) => {
+  const buildSystemPrompt = (models, relevantRefs = [], withAbstracts = false, focusPmids = [], fulltextMap = {}, oaSet = new Set()) => {
     const jaxRrid = (url) => {
       const id = url?.split('/strain/')?.[1];
       return id ? `RRID:IMSR_JAX:${id}` : '';
@@ -304,17 +313,20 @@ function App() {
           // No abstract either
           return `${base}\n   [NOT IN PMC OA — no abstract available]`;
         }
-        // Background papers: compressed in deep dive mode to conserve tokens
+        // Background papers: mark OA availability, compressed snippet
+        const isOa = oaSet.has(String(r.pmid));
+        const oaTag = isOa && !withAbstracts ? ' [OA — full text available]' : '';
+        const baseWithOa = oaTag ? base.replace(/( \[FOCUS\])?$/, `${oaTag}$1`) : base;
         const snippetLen = withAbstracts ? 350 : (idx < 8 ? 350 : 0);
         if (snippetLen > 0 && r.abstract) {
           const snippet = r.abstract.slice(0, snippetLen).trimEnd();
-          return `${base}\n   Abstract: ${snippet}${r.abstract.length > snippetLen ? '…' : ''}`;
+          return `${baseWithOa}\n   Abstract: ${snippet}${r.abstract.length > snippetLen ? '…' : ''}`;
         }
         // Fall back to TL;DR for papers outside the abstract window
         if (r.tldr) {
-          return `${base}\n   Summary: ${r.tldr}`;
+          return `${baseWithOa}\n   Summary: ${r.tldr}`;
         }
-        return base;
+        return baseWithOa;
       });
     const allBibEntries = [...modelBibEntries, ...extraRefs];
     const citationPool = allBibEntries.map((e, i) => `[${i + 1}] ${e}`).join('\n');
@@ -377,6 +389,11 @@ If a user asks "which model is best", "what model should I use", "which model do
 2. Redirect constructively: ask what the specific research question, phenotype of interest, age group, and primary endpoint are.
 3. Note briefly that the right choice depends on gene coverage (partial vs full trisomy), mosaicism, available phenotypic data, colony background, and translational concordance for the intended endpoint.
 4. You may summarise 2–3 model categories and their trade-offs, but do not rank them.
+
+${!withAbstracts ? `## DEEP DIVE SUGGESTION RULE:
+When the user asks about a specific paper or a small group (1–5 papers by PMID or name), check whether any of those papers show [OA — full text available] in the citation pool above. If so, after delivering your abstract-level response, append a brief suggestion on a new line:
+💡 Full text is available for [those PMIDs] in the PMC Open Access corpus. Turn on **Deep Dive** (toggle above the chat) and ask again to extract verbatim Results, Methods, and Figure Legends.
+Only add this suggestion when: (a) the user is asking about 1–5 specific papers, AND (b) at least one of those papers shows [OA — full text available] in the citation pool, AND (c) Deep Dive is not already on.` : ''}
 
 ${withAbstracts && focusPmids.length > 0 ? `## DEEP DIVE MODE — ACTIVE (${focusPmids.length} focus paper${focusPmids.length > 1 ? 's' : ''})
 Papers marked [FOCUS] in the citation pool are the primary targets. For each [FOCUS] paper:
@@ -456,7 +473,7 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
       const mentionedPmids = [...ragQuery.matchAll(/\b(\d{7,9})\b/g)].map(m => m[1]);
       const focusPmids = deepDive && mentionedPmids.length > 0 ? mentionedPmids.slice(0, 5) : [];
       const relevantRefs = getRelevantRefs(ragQuery, deepDive ? 12 : 30, mentionedPmids);
-      const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive, focusPmids, fulltext || {});
+      const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive, focusPmids, fulltext || {}, oaPmids || new Set());
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
       const responseText = selectedModel === 'gpt-5.5'
         ? await callFlyerGPT55(messagesWithSystem)
