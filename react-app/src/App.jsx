@@ -1313,7 +1313,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               </a>
             </p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-              <span>🙏 Acknowledgement:</span>
+              <span>Acknowledgement:</span>
               <a
                 href="https://www.udayton.edu"
                 target="_blank"
