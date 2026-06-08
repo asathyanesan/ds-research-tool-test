@@ -684,7 +684,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                 Model data sourced from{' '}
                 <a href="https://github.com/abbash83/DS_Rodent_Models_Database" target="_blank" rel="noopener noreferrer" className="font-semibold underline">abbash83/DS_Rodent_Models_Database</a>
-                {' '}· Compiled from: Folz, A., Sloan, K., Roper, R.J. (2025). <em>Mouse Models of Down Syndrome</em>. Springer.
+                {' '}· Updated from: Folz, A., Sloan, K., Roper, R.J. (2025). <em>Mouse Models of Down Syndrome</em>. Springer.
               </div>
               <div className="mb-4">
                 <div className="relative mb-3">
