@@ -64,10 +64,9 @@ export default {
       });
     }
 
-    const responseBody = await upstream.arrayBuffer();
     const contentType = upstream.headers.get('Content-Type') || 'application/json';
 
-    // For streaming responses, pipe the body directly rather than buffering
+    // Check content-type BEFORE reading body — streaming responses must be piped directly
     if (contentType.includes('text/event-stream') || contentType.includes('stream')) {
       return new Response(upstream.body, {
         status: upstream.status,
@@ -80,6 +79,7 @@ export default {
       });
     }
 
+    const responseBody = await upstream.arrayBuffer();
     return new Response(responseBody, {
       status: upstream.status,
       headers: {
