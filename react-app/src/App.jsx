@@ -1196,7 +1196,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
-                    <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — limited to 50 AI queries/month. Please use thoughtfully.</p>
+                    <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — please use queries thoughtfully.</p>
                   </div>
 
                   {chatMessages.length > 0 && (
@@ -1365,7 +1365,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
               </a>
             </p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-              <span>Acknowledgement:</span>
+              <span>              cd cloudflare-worker; npx wrangler login; npx wrangler deployAcknowledgement:</span>
               <a
                 href="https://www.udayton.edu"
                 target="_blank"
