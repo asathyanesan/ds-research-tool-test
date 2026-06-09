@@ -400,9 +400,10 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
 1. If the entry shows [FULL TEXT AVAILABLE], the RESULTS SECTION, METHODS SECTION, and FIGURE LEGENDS text is provided — treat this as the verbatim paper content. Quote specific sentences with quotation marks and label the source (Methods / Results / Figure legend N).
 2. If the entry shows [NOT IN PMC OA — abstract only], do NOT attempt to extract section-level detail from the abstract. Instead respond: "Full text for this paper is not available in PMC Open Access. *— tolle, lege — follow the [[PMID:XXXXXXX]] link to access the full text directly.*" You may briefly summarise what the abstract states, but be explicit that section-level data (specific results, methods detail) cannot be provided.
 3. If the entry shows [NOT IN PMC OA — no abstract available], respond: "No text is available for this paper in the curated corpus. *— tolle, lege — follow the [[PMID:XXXXXXX]] link to access it directly.*"
-4. For [FULL TEXT AVAILABLE] papers: extract every numerical value present across Results, Methods, and Figure Legends — n per group, p-values, effect sizes, confidence intervals, specific measurements. If a value is NOT in the provided text, state: "Not stated in the available text."
-5. Do not extrapolate or estimate values not present in the text.
-6. Close with: *— tolle, lege — follow the [[PMID:XXXXXXX]] link for complete methods, supplementary data, and figures.*` : ''}`
+4. **IMPORTANT — index not yet loaded:** If a [FOCUS] paper shows neither [FULL TEXT AVAILABLE] nor [NOT IN PMC OA] — i.e. it has only a short abstract snippet — this means the full-text index had not finished loading when this query was sent. In this case, apologise briefly: "I'm sorry — it looks like the full-text index was still loading when you sent this query. Please ask again — the index should now be ready." Do not attempt section-level extraction from the snippet.
+5. For [FULL TEXT AVAILABLE] papers: extract every numerical value present across Results, Methods, and Figure Legends — n per group, p-values, effect sizes, confidence intervals, specific measurements. If a value is NOT in the provided text, state: "Not stated in the available text."
+6. Do not extrapolate or estimate values not present in the text.
+7. Close with: *— tolle, lege — follow the [[PMID:XXXXXXX]] link for complete methods, supplementary data, and figures.*` : ''}`
     };
   };
 
@@ -1186,9 +1187,9 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
                         Deep Dive {deepDive ? 'ON' : 'OFF'}
                       </button>
                       {deepDive && (
-                        <span className="text-xs text-purple-500">
+                        <span className={`text-xs ${fulltextLoading ? 'text-amber-600 font-medium' : 'text-purple-500'}`}>
                           {fulltextLoading
-                            ? 'loading full text…'
+                            ? '⏳ loading full text index… (~10 sec) — please wait before sending'
                             : fulltext && Object.keys(fulltext).length > 0
                               ? `full text: ${Object.keys(fulltext).length} papers · cite PMID → drill down`
                               : 'cite a PMID → full extraction · up to 5 papers'}
