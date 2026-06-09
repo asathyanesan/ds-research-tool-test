@@ -10,6 +10,7 @@ const corsHeaders = (origin) => ({
   'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : 'https://asathyanesan.github.io',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Expose-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
 });
 
@@ -75,11 +76,25 @@ export default {
     }
 
     const responseBody = await upstream.arrayBuffer();
+    const contentType = upstream.headers.get('Content-Type') || 'application/json';
+
+    // For streaming responses, pipe the body directly rather than buffering
+    if (contentType.includes('text/event-stream') || contentType.includes('stream')) {
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'no-cache',
+          'X-Accel-Buffering': 'no',
+          ...CORS_HEADERS,
+        },
+      });
+    }
 
     return new Response(responseBody, {
       status: upstream.status,
       headers: {
-        'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
+        'Content-Type': contentType,
         ...CORS_HEADERS,
       },
     });

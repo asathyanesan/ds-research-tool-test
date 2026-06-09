@@ -406,13 +406,37 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
     };
   };
 
-  const callFlyerGPT55 = async (messages) => {
+  // Parse an SSE stream and yield content delta strings
+  async function* streamSSE(response) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop(); // keep incomplete last line
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const payload = line.slice(5).trim();
+        if (payload === '[DONE]') return;
+        try {
+          const json = JSON.parse(payload);
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta) yield delta;
+        } catch { /* skip malformed lines */ }
+      }
+    }
+  }
+
+  const callFlyerGPT55 = async (messages, onToken) => {
     if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
     const url = `${WORKER_BASE}/openai/deployments/gpt-5.5/chat/completions?api-version=2024-10-21`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000, stream: true })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -420,17 +444,21 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
       if (response.status === 429) throw new Error(msg || 'GPT-5.5 rate limit reached (1,000 tokens/min) — please wait ~60 seconds and try again.');
       throw new Error(`GPT-5.5 error ${response.status}: ${msg || response.statusText}`);
     }
-    const data = await response.json();
-    return data.choices[0].message.content;
+    let full = '';
+    for await (const token of streamSSE(response)) {
+      full += token;
+      onToken(full);
+    }
+    return full;
   };
 
-  const callFlyerGPT54 = async (messages) => {
+  const callFlyerGPT54 = async (messages, onToken) => {
     if (!WORKER_BASE) throw new Error('VITE_WORKER_URL not configured');
     const url = `${WORKER_BASE}/openai/deployments/gpt-5.4/chat/completions?api-version=2024-10-21`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, max_completion_tokens: 8000, temperature: 0.3 })
+      body: JSON.stringify({ messages, max_completion_tokens: 8000, temperature: 0.3, stream: true })
     });
     if (!response.ok) {
       const raw = await response.text().catch(() => '');
@@ -438,8 +466,12 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
       if (response.status === 429) throw new Error(msg || 'GPT-5.4 rate limit reached — please wait a moment and try again.');
       throw new Error(`GPT-5.4 error ${response.status}: ${msg || response.statusText}`);
     }
-    const data = await response.json();
-    return data.choices[0].message.content;
+    let full = '';
+    for await (const token of streamSSE(response)) {
+      full += token;
+      onToken(full);
+    }
+    return full;
   };
 
 
@@ -459,32 +491,52 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
     setChatInput('');
     const newMessage = { role: 'user', content: userMessage };
     const updatedMessages = [...chatMessages, newMessage];
-    setChatMessages(updatedMessages);
+    // Add a placeholder assistant message for streaming
+    const streamingIdx = updatedMessages.length;
+    setChatMessages([...updatedMessages, { role: 'assistant', content: '' }]);
     try {
-      // Build RAG query from last 4 turns + current message so short follow-ups
-      // ("yes", "sex specific", "expand on that") still pull the right papers
       const recentContext = chatMessages
         .filter(m => m.role !== 'system')
         .slice(-4)
         .map(m => m.content)
         .join(' ');
       const ragQuery = `${recentContext} ${userMessage}`.trim();
-      // Extract any PMIDs mentioned in conversation — pin them so they're always in context
       const mentionedPmids = [...ragQuery.matchAll(/\b(\d{7,9})\b/g)].map(m => m[1]);
       const focusPmids = deepDive && mentionedPmids.length > 0 ? mentionedPmids.slice(0, 5) : [];
       const relevantRefs = getRelevantRefs(ragQuery, deepDive ? 12 : 30, mentionedPmids);
       const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive, focusPmids, fulltext || {}, oaPmids || new Set());
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
+
+      // onToken: update the streaming placeholder message in real time
+      const onToken = (partial) => {
+        setChatMessages(prev => {
+          const next = [...prev];
+          next[streamingIdx] = { role: 'assistant', content: partial };
+          return next;
+        });
+      };
+
+      setLoadingStatus('');
       const responseText = selectedModel === 'gpt-5.5'
-        ? await callFlyerGPT55(messagesWithSystem)
-        : await callFlyerGPT54(messagesWithSystem);
-      setChatMessages([...updatedMessages, { role: 'assistant', content: linkifyPmids(responseText) }]);
+        ? await callFlyerGPT55(messagesWithSystem, onToken)
+        : await callFlyerGPT54(messagesWithSystem, onToken);
+
+      // Final update: apply linkify on the completed text
+      setChatMessages(prev => {
+        const next = [...prev];
+        next[streamingIdx] = { role: 'assistant', content: linkifyPmids(responseText) };
+        return next;
+      });
     } catch (error) {
       console.error('Chat error:', error);
-      setChatMessages([...updatedMessages, {
-        role: 'assistant',
-        content: `⚠️ **Error contacting ${modelLabel}**: ${error.message}`
-      }]);
+      setChatMessages(prev => {
+        const next = [...prev];
+        next[streamingIdx] = {
+          role: 'assistant',
+          content: `⚠️ **Error contacting ${modelLabel}**: ${error.message}`
+        };
+        return next;
+      });
     } finally {
       setIsLoading(false);
       setLoadingStatus('');
