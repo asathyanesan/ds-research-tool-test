@@ -545,7 +545,7 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
 
   const exportChecklist = () => {
     const completedItems = guidelines.filter(g => g.checked);
-    const exportText = `ARRIVE Guidelines Checklist\nGenerated: ${new Date().toLocaleString()}\n${'='.repeat(60)}\n\nCOMPLETED ITEMS:\n${completedItems.map(item => `✓ ${item.category}: ${item.item}`).join('\n')}\n\nREMAINING ITEMS:\n${guidelines.filter(g => !g.checked).map(item => `☐ ${item.category}: ${item.item}`).join('\n')}\n\nDS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/\n`;
+    const exportText = `ARRIVE Guidelines Checklist\nGenerated: ${new Date().toLocaleString()}\n${'='.repeat(60)}\n\nCOMPLETED ITEMS:\n${completedItems.map(item => `✓ ${item.category}: ${item.item}`).join('\n')}\n\nREMAINING ITEMS:\n${guidelines.filter(g => !g.checked).map(item => `☐ ${item.category}: ${item.item}`).join('\n')}\n\nDS Preclinical Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/\n`;
     const blob = new Blob([exportText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -559,7 +559,7 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
 
   const downloadConversation = () => {
     if (chatMessages.length === 0) { alert('No conversation to download yet!'); return; }
-    const conversationText = `DS Research Assistant - Conversation Export
+    const conversationText = `DS Preclinical Research Assistant - Conversation Export
 Generated: ${new Date().toLocaleString()}
 ${'='.repeat(60)}
 
@@ -569,7 +569,7 @@ ${chatMessages.map((msg) => {
   return `${role}:\n${msg.content}${divider}`;
 }).join('\n')}
 
-DS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
+DS Preclinical Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
 `;
     const blob = new Blob([conversationText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -585,14 +585,14 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
   const downloadLastAnswer = () => {
     const lastAssistantMsg = [...chatMessages].reverse().find(msg => msg.role === 'assistant');
     if (!lastAssistantMsg) { alert('No AI response to download yet!'); return; }
-    const answerText = `DS Research Assistant - Answer Export
+    const answerText = `DS Preclinical Research Assistant - Answer Export
 Generated: ${new Date().toLocaleString()}
 ${'='.repeat(60)}
 
 ${lastAssistantMsg.content}
 
 ${'='.repeat(60)}
-DS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
+DS Preclinical Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
 `;
     const blob = new Blob([answerText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -1292,7 +1292,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
                             </div>
                           </div>
                           <h3 className="text-2xl md:text-3xl font-bold mb-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-emerald-400 dark:to-emerald-400 bg-clip-text text-transparent">
-                            DS Research Assistant
+                            DS Preclinical Research Assistant
                           </h3>
                           <p className="text-slate-600 dark:text-slate-400 mb-2">
                             Ask anything about Down syndrome animal models, experimental design, or research guidance.
@@ -1419,7 +1419,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
           {activeTab !== 'chat' && (
             <footer className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-t border-slate-200/70 dark:border-slate-800 px-4 py-3 text-center text-slate-500 dark:text-slate-400 text-xs">
               <p>
-                DS Research Assistant • Open Source •{' '}
+                DS Preclinical Research Assistant • Open Source •{' '}
                 <a href="https://github.com/asathyanesan/ds-research-tool-test" target="_blank" rel="noopener noreferrer" className="text-teal-600 dark:text-teal-400 hover:underline">
                   GitHub
                 </a>
