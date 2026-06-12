@@ -1406,7 +1406,7 @@ DS Preclinical Research Assistant - https://asathyanesan.github.io/ds-research-t
                         </button>
                       </div>
                       <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 text-center px-2">
-                        AI can make mistakes — verify critical information. Enter to send, Shift+Enter for newline.
+                        AI can make mistakes — verify critical information. Enter to send, Shift+Enter for new line.
                       </p>
                     </div>
                   </div>
