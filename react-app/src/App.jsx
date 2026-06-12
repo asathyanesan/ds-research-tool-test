@@ -1,7 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download, FileDown, Menu, X, ZoomIn } from 'lucide-react';
+import {
+  Search, FileText, CheckSquare, BookOpen, Info, ExternalLink, Download,
+  FileDown, Menu, X, ZoomIn, Sun, Moon, Send, Sparkles, ChevronDown,
+  Beaker, MessageSquare, AlertTriangle, Trash2
+} from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+
 function App() {
+  /* ---------- THEME ---------- */
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+    const saved = localStorage.getItem('ds-theme');
+    if (saved) return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
+    localStorage.setItem('ds-theme', theme);
+  }, [theme]);
+
+  /* ---------- STATE ---------- */
   const [activeTab, setActiveTab] = useState('models');
   const [selectedModels, setSelectedModels] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,11 +46,22 @@ function App() {
   const [designDuration, setDesignDuration] = useState('');
   const [designEndpoint, setDesignEndpoint] = useState('');
   const chatContainerRef = useRef(null);
+  const chatInputRef = useRef(null);
+
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages, isLoading]);
+
+  /* ---------- AUTO-RESIZE TEXTAREA ---------- */
+  useEffect(() => {
+    const el = chatInputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const next = Math.min(el.scrollHeight, 200);
+    el.style.height = next + 'px';
+  }, [chatInput]);
 
   const [guidelines, setGuidelines] = useState([
     { id: 1, category: 'Study Design', item: 'Provide precise details of study design including primary research question', checked: false },
@@ -50,33 +81,25 @@ function App() {
   ]);
 
   const [animalModels, setAnimalModels] = useState([]);
-
-  // Load animal models data
   const [bibliography, setBibliography] = useState([]);
+  const [clinicalPapers, setClinicalPapers] = useState([]);
 
   useEffect(() => {
     fetch('/ds-research-tool-test/data/animal-models.json')
-      .then(response => response.json())
-      .then(data => setAnimalModels(data))
-      .catch(error => console.error('Error loading animal models:', error));
+      .then(r => r.json()).then(setAnimalModels)
+      .catch(e => console.error('Error loading animal models:', e));
   }, []);
-
   useEffect(() => {
     fetch('/ds-research-tool-test/data/bibliography.json')
-      .then(response => response.json())
-      .then(data => setBibliography(data))
-      .catch(error => console.error('Error loading bibliography:', error));
+      .then(r => r.json()).then(setBibliography)
+      .catch(e => console.error('Error loading bibliography:', e));
   }, []);
-
-  const [clinicalPapers, setClinicalPapers] = useState([]);
   useEffect(() => {
     fetch('/ds-research-tool-test/data/clinical-papers.json')
-      .then(response => response.json())
-      .then(data => setClinicalPapers(data))
-      .catch(error => console.error('Error loading clinical papers:', error));
+      .then(r => r.json()).then(setClinicalPapers)
+      .catch(e => console.error('Error loading clinical papers:', e));
   }, []);
 
-  // OA PMID set — eagerly loaded (15KB) so we can mark papers even without Deep Dive
   const [oaPmids, setOaPmids] = useState(null);
   useEffect(() => {
     fetch('/ds-research-tool-test/data/fulltext-pmids.json')
@@ -85,7 +108,6 @@ function App() {
       .catch(() => setOaPmids(new Set()));
   }, []);
 
-  // Full text (Results + Methods + Figures) — lazy-loaded only when Deep Dive is first activated
   const [fulltext, setFulltext] = useState(null);
   const [fulltextLoading, setFulltextLoading] = useState(false);
   useEffect(() => {
@@ -167,14 +189,14 @@ function App() {
     const html = `<!DOCTYPE html><html><head>
     <title>Study Design — DS Research Tool</title>
     <style>
-      body { font-family: Arial, sans-serif; max-width: 680px; margin: 36px auto; color: #222; font-size: 13px; }
-      h1 { font-size: 18px; color: #1d4ed8; border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; margin-bottom: 16px; }
-      h2 { font-size: 13px; font-weight: bold; color: #1d4ed8; margin: 20px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+      body { font-family: 'Inter', Arial, sans-serif; max-width: 680px; margin: 36px auto; color: #222; font-size: 13px; }
+      h1 { font-size: 18px; color: #0f766e; border-bottom: 2px solid #0f766e; padding-bottom: 6px; margin-bottom: 16px; }
+      h2 { font-size: 13px; font-weight: bold; color: #0f766e; margin: 20px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; }
       table { width: 100%; border-collapse: collapse; }
       td { padding: 6px 10px; border: 1px solid #ddd; }
-      td:first-child { font-weight: bold; background: #f0f4ff; width: 42%; }
+      td:first-child { font-weight: bold; background: #f0fdfa; width: 42%; }
       .result-grid { display: flex; gap: 16px; justify-content: center; margin: 16px 0; }
-      .result-box { text-align: center; border: 2px solid #93c5fd; border-radius: 8px; padding: 12px 20px; min-width: 120px; }
+      .result-box { text-align: center; border: 2px solid #5eead4; border-radius: 8px; padding: 12px 20px; min-width: 120px; }
       .result-num { font-size: 28px; font-weight: bold; }
       .result-label { font-size: 11px; color: #555; margin-top: 2px; }
       .note { font-size: 11px; color: #666; text-align: center; margin-top: 4px; }
@@ -200,9 +222,9 @@ function App() {
       <tr><td>Number of Groups</td><td>${calcGroups}</td></tr>
     </table>
     <div class="result-grid">
-      <div class="result-box"><div class="result-num" style="color:#1d4ed8">${r.nRaw}</div><div class="result-label">n/group (raw)</div></div>
-      <div class="result-box"><div class="result-num" style="color:#ea580c">${r.nWithAttrition}</div><div class="result-label">n/group (+attrition)</div></div>
-      <div class="result-box"><div class="result-num" style="color:#16a34a">${r.total}</div><div class="result-label">total animals</div></div>
+      <div class="result-box"><div class="result-num" style="color:#0f766e">${r.nRaw}</div><div class="result-label">n/group (raw)</div></div>
+      <div class="result-box"><div class="result-num" style="color:#0891b2">${r.nWithAttrition}</div><div class="result-label">n/group (+attrition)</div></div>
+      <div class="result-box"><div class="result-num" style="color:#059669">${r.total}</div><div class="result-label">total animals</div></div>
     </div>
     <p class="note">DS guidelines: n≥10/group (behavioural) · n≥6/group (molecular)</p>
     <div class="footer">Generated ${new Date().toLocaleDateString()} · DS Research Tool · https://asathyanesan.github.io/ds-research-tool-test/</div>
@@ -215,10 +237,7 @@ function App() {
 
   const WORKER_BASE = import.meta.env.VITE_WORKER_URL;
 
-  // Score bibliography entries by keyword overlap with a query string (client-side RAG)
-  // pinPmids: any PMIDs explicitly mentioned in conversation — always included regardless of score
   const getRelevantRefs = (query, topN = 30, pinPmids = []) => {
-    // Merge rodent bibliography + clinical papers (human studies), deduplicating by PMID
     const existingPmids = new Set(bibliography.map(e => String(e.pmid)));
     const pool = [...bibliography, ...clinicalPapers.filter(e => !existingPmids.has(String(e.pmid)))];
     if (!pool.length) return [];
@@ -234,10 +253,8 @@ function App() {
       .filter(w => w.length > 2 && !stopWords.has(w));
     const pinnedSet = new Set(pinPmids.map(String));
     const scored = pool.map(entry => {
-      // Pinned papers always win — guaranteed slot in context
       if (pinnedSet.has(String(entry.pmid))) return { entry, score: Infinity };
       if (!words.length) return { entry, score: 0 };
-      // Score against title + authors + abstract + MeSH terms + author keywords
       const meshText = (entry.mesh || []).join(' ');
       const kwText = (entry.keywords || []).join(' ');
       const text = ((entry.title || '') + ' ' + (entry.authors || '') + ' ' + (entry.abstract || '').slice(0, 600) + ' ' + meshText + ' ' + kwText).toLowerCase();
@@ -261,7 +278,6 @@ function App() {
       return m ? m[1] : null;
     };
 
-    // Verified papers anchored to each model (always included)
     const seenPmids = new Set();
     const modelBibEntries = [];
     models.forEach(m => {
@@ -278,10 +294,6 @@ function App() {
       });
     });
 
-    // Query-relevant papers from the full bibliography (deduplicated)
-    // Top 8 always get a 350-char snippet so the AI can see which models/findings in each paper.
-    // Deep Dive: focus papers (cited PMIDs, up to 5) get full abstract + all metadata for
-    // verbatim extraction; background papers are compressed to save tokens.
     const focusSet = new Set(focusPmids.map(String));
     const extraRefs = relevantRefs
       .filter(r => !seenPmids.has(String(r.pmid)))
@@ -290,7 +302,6 @@ function App() {
         const isFocus = focusSet.has(String(r.pmid));
         const focusTag = isFocus ? ' [FOCUS]' : '';
         const base = `PMID:${r.pmid} — ${r.authors} (${r.year}) "${r.title}"${humanTag}${focusTag}`;
-        // Focus papers in Deep Dive: full text sections first, then fall back to full abstract + metadata
         if (isFocus) {
           const ft = fulltextMap[String(r.pmid)];
           if (ft && (ft.results || ft.methods || ft.figures)) {
@@ -300,7 +311,6 @@ function App() {
             if (ft.figures) parts.push(`FIGURE LEGENDS:\n${ft.figures}`);
             return `${base}\n   [FULL TEXT AVAILABLE]\n   ${parts.join('\n   ')}`;
           }
-          // Fall back to full abstract + all metadata when no full text
           if (r.abstract) {
             const extraFields = [
               r.abstract,
@@ -310,10 +320,8 @@ function App() {
             ].filter(Boolean).join('\n   ');
             return `${base}\n   [NOT IN PMC OA — abstract only]\n   Abstract: ${extraFields}`;
           }
-          // No abstract either
           return `${base}\n   [NOT IN PMC OA — no abstract available]`;
         }
-        // Background papers: mark OA availability, compressed snippet
         const isOa = oaSet.has(String(r.pmid));
         const oaTag = isOa && !withAbstracts ? ' [OA — full text available]' : '';
         const baseWithOa = oaTag ? base.replace(/( \[FOCUS\])?$/, `${oaTag}$1`) : base;
@@ -322,7 +330,6 @@ function App() {
           const snippet = r.abstract.slice(0, snippetLen).trimEnd();
           return `${baseWithOa}\n   Abstract: ${snippet}${r.abstract.length > snippetLen ? '…' : ''}`;
         }
-        // Fall back to TL;DR for papers outside the abstract window
         if (r.tldr) {
           return `${baseWithOa}\n   Summary: ${r.tldr}`;
         }
@@ -407,7 +414,6 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
     };
   };
 
-  // Parse an SSE stream and yield content delta strings
   async function* streamSSE(response) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -417,7 +423,7 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
       if (done) break;
       buf += decoder.decode(value, { stream: true });
       const lines = buf.split('\n');
-      buf = lines.pop(); // keep incomplete last line
+      buf = lines.pop();
       for (const line of lines) {
         if (!line.startsWith('data:')) continue;
         const payload = line.slice(5).trim();
@@ -426,7 +432,7 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
           const json = JSON.parse(payload);
           const delta = json.choices?.[0]?.delta?.content;
           if (delta) yield delta;
-        } catch { /* skip malformed lines */ }
+        } catch { /* skip */ }
       }
     }
   }
@@ -475,11 +481,7 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
     return full;
   };
 
-
-
-  // Convert [PMID:XXXXXXX] patterns to clickable PubMed markdown links
   const linkifyPmids = (text) => {
-    // Match [PMID:digits] not already followed by ( (i.e. not already a markdown link target)
     return text.replace(/\[PMID:(\d{5,9})\](?!\()/g,
       (_, pmid) => `[[PMID:${pmid}]](https://pubmed.ncbi.nlm.nih.gov/${pmid}/)`);
   };
@@ -492,7 +494,6 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
     setChatInput('');
     const newMessage = { role: 'user', content: userMessage };
     const updatedMessages = [...chatMessages, newMessage];
-    // Add a placeholder assistant message for streaming
     const streamingIdx = updatedMessages.length;
     setChatMessages([...updatedMessages, { role: 'assistant', content: '' }]);
     try {
@@ -508,7 +509,6 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
       const systemPrompt = buildSystemPrompt(animalModels, relevantRefs, deepDive, focusPmids, fulltext || {}, oaPmids || new Set());
       const messagesWithSystem = [systemPrompt, ...updatedMessages];
 
-      // onToken: update the streaming placeholder message in real time
       const onToken = (partial) => {
         setChatMessages(prev => {
           const next = [...prev];
@@ -522,7 +522,6 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
         ? await callFlyerGPT55(messagesWithSystem, onToken)
         : await callFlyerGPT54(messagesWithSystem, onToken);
 
-      // Final update: apply linkify on the completed text
       setChatMessages(prev => {
         const next = [...prev];
         next[streamingIdx] = { role: 'assistant', content: linkifyPmids(responseText) };
@@ -546,8 +545,7 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
 
   const exportChecklist = () => {
     const completedItems = guidelines.filter(g => g.checked);
-    const exportText = `ARRIVE Guidelines Checklist\nGenerated: ${new Date().toLocaleString()}\n${'='.repeat(60)}\n\nCOMPLETED ITEMS:\n${completedItems.map(item => `✓ ${item.category}: ${item.item}`).join('\n')}\n\nREMAINING ITEMS:\n${guidelines.filter(g => !g.checked).map(item => `☐ ${item.category}: ${item.item}`).join('\n')}\n\nDS Research Assistant - https://asathyanesan.github.io/ds-research-tool\n`;
-
+    const exportText = `ARRIVE Guidelines Checklist\nGenerated: ${new Date().toLocaleString()}\n${'='.repeat(60)}\n\nCOMPLETED ITEMS:\n${completedItems.map(item => `✓ ${item.category}: ${item.item}`).join('\n')}\n\nREMAINING ITEMS:\n${guidelines.filter(g => !g.checked).map(item => `☐ ${item.category}: ${item.item}`).join('\n')}\n\nDS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/\n`;
     const blob = new Blob([exportText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -560,26 +558,19 @@ Papers marked [FOCUS] in the citation pool are the primary targets. For each [FO
   };
 
   const downloadConversation = () => {
-    if (chatMessages.length === 0) {
-      alert('No conversation to download yet!');
-      return;
-    }
-
+    if (chatMessages.length === 0) { alert('No conversation to download yet!'); return; }
     const conversationText = `DS Research Assistant - Conversation Export
 Generated: ${new Date().toLocaleString()}
 ${'='.repeat(60)}
 
-${
-      chatMessages.map((msg, idx) => {
-        const role = msg.role === 'user' ? 'YOU' : 'AI ASSISTANT';
-        const divider = '\n' + '-'.repeat(60) + '\n';
-        return `${role}:\n${msg.content}${divider}`;
-      }).join('\n')
-    }
+${chatMessages.map((msg) => {
+  const role = msg.role === 'user' ? 'YOU' : 'AI ASSISTANT';
+  const divider = '\n' + '-'.repeat(60) + '\n';
+  return `${role}:\n${msg.content}${divider}`;
+}).join('\n')}
 
-DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
+DS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
 `;
-
     const blob = new Blob([conversationText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -593,12 +584,7 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
 
   const downloadLastAnswer = () => {
     const lastAssistantMsg = [...chatMessages].reverse().find(msg => msg.role === 'assistant');
-    
-    if (!lastAssistantMsg) {
-      alert('No AI response to download yet!');
-      return;
-    }
-
+    if (!lastAssistantMsg) { alert('No AI response to download yet!'); return; }
     const answerText = `DS Research Assistant - Answer Export
 Generated: ${new Date().toLocaleString()}
 ${'='.repeat(60)}
@@ -606,9 +592,8 @@ ${'='.repeat(60)}
 ${lastAssistantMsg.content}
 
 ${'='.repeat(60)}
-DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
+DS Research Assistant - https://asathyanesan.github.io/ds-research-tool-test/
 `;
-
     const blob = new Blob([answerText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -618,6 +603,13 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const clearChat = () => {
+    if (chatMessages.length === 0) return;
+    if (window.confirm('Clear the conversation? This cannot be undone.')) {
+      setChatMessages([]);
+    }
   };
 
   const filteredModels = animalModels.filter(model => {
@@ -632,762 +624,829 @@ DS Research Assistant - https://asathyanesan.github.io/ds-research-tool
     return matchesSearch && matchesType && matchesSpecies;
   });
 
+  /* ---------- UI HELPERS ---------- */
+  const tabs = [
+    { id: 'models', label: 'Animal Models', icon: Search },
+    { id: 'compare', label: 'Compare', icon: FileText },
+    { id: 'design', label: 'Study Design', icon: Beaker },
+    { id: 'guidelines', label: 'ARRIVE Check', icon: CheckSquare },
+    { id: 'chat', label: 'AI Assistant', icon: MessageSquare }
+  ];
+
+  const examplePrompts = [
+    'What bone and craniofacial phenotypes have been reported in male Tc1 and Ts65Dn mice? Tabulate with citations.',
+    'Compare interferon-pathway immune phenotypes in Tc1 vs TcMAC21 — key differences and supporting papers?',
+    'What n per group is needed to detect Morris water maze deficits in male Ts65Dn mice aged 3–4 months?',
+    'What hippocampal LTP deficits have been shown in Dp1Tyb mice? Cite specific papers.',
+    'Which DS mouse models show cardiac septal defects, and what are the key papers?'
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen font-sans bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       <div className="flex h-screen overflow-hidden">
         {/* Mobile backdrop */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
-        {/* Left Sidebar Navigation */}
-        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:z-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          {/* Sidebar Header */}
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-800 mb-1">T21RS DS Animal Models</h1>
-              <p className="text-xs text-gray-500">Assistant Tool</p>
+
+        {/* ===== SIDEBAR ===== */}
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 flex flex-col transform transition-transform duration-300 ease-out md:relative md:translate-x-0 md:z-auto
+          bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200/70 dark:border-slate-800
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          {/* Brand */}
+          <div className="p-5 border-b border-slate-200/70 dark:border-slate-800 flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-white dark:bg-slate-100 ring-1 ring-teal-200 dark:ring-teal-700 shadow-md shadow-teal-500/20 flex items-center justify-center overflow-hidden">
+              <img src="/ds-research-tool-test/t21rs-logo.svg" alt="T21RS" className="h-10 w-10 object-contain" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-bold tracking-tight text-slate-900 dark:text-white truncate">T21RS DS Models</h1>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Research Assistant</p>
             </div>
             <button
-              className="md:hidden text-gray-500 hover:text-gray-700"
+              className="md:hidden p-1.5 -mr-1 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
               onClick={() => setSidebarOpen(false)}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
-          {/* Navigation Menu */}
-          <nav className="flex-1 p-4">
-            <div className="space-y-2">
-              {[
-                { id: 'models', label: 'Animal Models', icon: Search },
-                { id: 'compare', label: 'Compare', icon: FileText },
-                { id: 'design', label: 'Study Design', icon: Info },
-                { id: 'guidelines', label: 'ARRIVE Check', icon: CheckSquare },
-                { id: 'chat', label: 'AI Assistant', icon: BookOpen }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
-                  className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-blue-500 text-white shadow-md transform scale-105'
-                      : 'text-gray-700 hover:bg-gray-100 hover:translate-x-1'
-                  }`}
-                >
-                  <tab.icon size={20} />
-                  <span className="font-medium">{tab.label}</span>
-                </button>
-              ))}
+          {/* Nav */}
+          <nav className="flex-1 p-3 overflow-y-auto">
+            <div className="space-y-1">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
+                    className={`group w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-sm font-medium transition-all
+                      ${active
+                        ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70'}`}
+                  >
+                    <Icon size={18} className={active ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-teal-500'} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Feature card */}
+            <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-950/40 dark:via-cyan-950/40 dark:to-emerald-950/40 ring-1 ring-teal-100 dark:ring-teal-900/60">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-teal-600 dark:text-teal-400" />
+                <p className="text-xs font-semibold text-teal-700 dark:text-teal-300">Features</p>
+              </div>
+              <ul className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                <li>• Evidence-based citations</li>
+                <li>• ARRIVE compliance tracking</li>
+                <li>• Deep-Dive full-text RAG</li>
+              </ul>
+              <p className="mt-2.5 text-[10px] text-teal-700/80 dark:text-teal-400/80">
+                <span className="font-semibold">AI:</span> GPT-5.5 &amp; GPT-5.4 · FlyerGPT
+              </p>
             </div>
           </nav>
 
-          {/* Footer Info */}
-          <div className="p-4 border-t border-gray-200 text-xs text-gray-500">
-            <div className="bg-blue-50 rounded-lg p-3">
-              <p className="font-semibold text-blue-700 mb-1">💡 Features</p>
-              <p>• Evidence-Based</p>
-              <p>• ARRIVE Compliance</p>
-
-              <p>• Content Verification</p>
-              <p className="mt-2 text-[10px] text-blue-600">
-                <span className="font-semibold">AI:</span> GPT-5.5 &amp; GPT-5.4 via FlyerGPT
-              </p>
-            </div>
+          {/* Theme toggle */}
+          <div className="p-3 border-t border-slate-200/70 dark:border-slate-800">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors"
+            >
+              <span className="flex items-center gap-3">
+                {theme === 'dark' ? <Moon size={18} className="text-emerald-400" /> : <Sun size={18} className="text-amber-500" />}
+                {theme === 'dark' ? 'Dark mode' : 'Light mode'}
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-slate-400">Toggle</span>
+            </button>
           </div>
         </aside>
 
-        {/* Main Content Area */}
+        {/* ===== MAIN ===== */}
         <main className="flex-1 overflow-hidden flex flex-col">
-          {/* Top Header */}
-          <header className="bg-white shadow-sm border-b border-gray-200 p-4">
-            <div className="max-w-7xl mx-auto flex items-start gap-3">
+          {/* Top header */}
+          <header className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800 px-4 md:px-8 py-3.5">
+            <div className="flex items-center gap-3">
               <button
-                className="md:hidden mt-1 text-gray-600 hover:text-gray-800 flex-shrink-0"
+                className="md:hidden p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex-shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
-                <Menu size={24} />
+                <Menu size={22} />
               </button>
-              <div className="flex-1">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-800">
-                {activeTab === 'models' && 'Animal Models Database'}
-                {activeTab === 'compare' && 'Model Comparison'}
-                {activeTab === 'design' && 'Study Design Guide'}
-                {activeTab === 'guidelines' && 'ARRIVE Guidelines Checklist'}
-                {activeTab === 'chat' && 'AI Research Assistant'}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {activeTab === 'models' && 'Search and explore Down syndrome animal models'}
-                {activeTab === 'compare' && 'Compare selected models side-by-side'}
-                {activeTab === 'design' && 'Experimental design recommendations'}
-                {activeTab === 'guidelines' && 'Track your compliance with reporting standards'}
-                {activeTab === 'chat' && 'Get AI-powered research guidance'}
-              </p>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {activeTab === 'models' && 'Animal Models Database'}
+                  {activeTab === 'compare' && 'Model Comparison'}
+                  {activeTab === 'design' && 'Study Design Guide'}
+                  {activeTab === 'guidelines' && 'ARRIVE Guidelines Checklist'}
+                  {activeTab === 'chat' && 'AI Research Assistant'}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {activeTab === 'models' && 'Search and explore Down syndrome animal models'}
+                  {activeTab === 'compare' && 'Compare selected models side-by-side'}
+                  {activeTab === 'design' && 'Experimental design recommendations'}
+                  {activeTab === 'guidelines' && 'Track your compliance with reporting standards'}
+                  {activeTab === 'chat' && 'Evidence-grounded answers on DS animal models'}
+                </p>
               </div>
+              {/* Desktop theme quick-toggle */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="hidden md:inline-flex items-center justify-center h-9 w-9 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
             </div>
           </header>
 
-          {/* Content Area */}
-          <div className="flex-1 overflow-auto p-3 md:p-6">
-            <div className="max-w-7xl mx-auto">
-          {activeTab === 'models' && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-                Model data sourced from{' '}
-                <a href="https://github.com/abbash83/DS_Rodent_Models_Database" target="_blank" rel="noopener noreferrer" className="font-semibold underline">abbash83/DS_Rodent_Models_Database</a>
-                {' '}· Updated from: Folz, A., Sloan, K., Roper, R.J. (2025). <em>Mouse Models of Down Syndrome</em>. Springer.
-              </div>
-              <div className="mb-4">
-                <div className="relative mb-3">
-                  <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    placeholder="Search models by name, type, background, or RRID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <select value={modelTypeFilter} onChange={e => setModelTypeFilter(e.target.value)}
-                    className="text-sm p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
-                    <option value="">All Types</option>
-                    {[...new Set(animalModels.map(m => m.type).filter(Boolean))].sort().map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  <select value={modelSpeciesFilter} onChange={e => setModelSpeciesFilter(e.target.value)}
-                    className="text-sm p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
-                    <option value="">All Species</option>
-                    {[...new Set(animalModels.map(m => m.species).filter(Boolean))].sort().map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  {(modelTypeFilter || modelSpeciesFilter) && (
-                    <button onClick={() => { setModelTypeFilter(''); setModelSpeciesFilter(''); }}
-                      className="text-sm px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
-                      Clear filters
-                    </button>
-                  )}
-                  <span className="ml-auto text-sm text-gray-500">
-                    {filteredModels.length} of {animalModels.length} models
-                  </span>
-                </div>
-              </div>
+          {/* ===== CONTENT ===== */}
+          <div className={`flex-1 overflow-auto ${activeTab === 'chat' ? '' : 'p-4 md:p-8'}`}>
+            <div className={`${activeTab === 'chat' ? 'h-full' : 'max-w-7xl mx-auto'}`}>
 
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-                {filteredModels.map(model => (
-                  <div 
-                    key={model.id} 
-                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                      selectedModels.includes(model.id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => handleModelSelect(model.id)}
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-semibold text-gray-800">{model.name}</h3>
-                      <div className="flex gap-2 flex-wrap">
-                        <span className="text-xs bg-gray-200 px-2 py-1 rounded">{model.species}</span>
-                        {model.type && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">{model.type}</span>}
-                        <a 
-                          href={model.jackson_link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ExternalLink size={16} />
-                        </a>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm mb-3">
-                      <div><span className="font-medium">Background:</span> {model.background}</div>
-                      <div><span className="font-medium">Trisomy:</span> {model.trisomy}</div>
-                      <div><span className="font-medium">Genes:</span> {model.genes}</div>
-                      <div>
-                        <span className="font-medium">RRID:</span>{' '}
-                        <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                          {model.rrid}
-                        </span>
-                      </div>
-                    </div>
-
-                    {model.description && (
-                      <div className="mb-3 text-sm text-gray-600 line-clamp-3">
-                        {model.description}
-                      </div>
-                    )}
-
-                    <div className="text-xs text-gray-500">
-                      Click to select for comparison
-                    </div>
+              {/* MODELS TAB */}
+              {activeTab === 'models' && (
+                <div className="bg-white dark:bg-slate-900/60 rounded-2xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 p-6">
+                  <div className="mb-4 p-3 bg-teal-50 dark:bg-teal-950/40 ring-1 ring-teal-100 dark:ring-teal-900/60 rounded-xl text-xs text-teal-800 dark:text-teal-300">
+                    Model data sourced from{' '}
+                    <a href="https://github.com/abbash83/DS_Rodent_Models_Database" target="_blank" rel="noopener noreferrer" className="font-semibold underline">abbash83/DS_Rodent_Models_Database</a>
+                    {' '}· Updated from: Folz, A., Sloan, K., Roper, R.J. (2025). <em>Mouse Models of Down Syndrome</em>. Springer.
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'compare' && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold mb-4">Model Comparison</h2>
-              {selectedModels.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <FileText size={48} className="mx-auto mb-4 text-gray-300" />
-                  <p>Select models from the Animal Models tab to compare them here</p>
-                </div>
-              ) : (
-                <div>
-                  <div className="overflow-x-auto mb-6">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="border p-3 text-left">Feature</th>
-                          {selectedModels.map(modelId => {
-                            const model = animalModels.find(m => m.id === modelId);
-                            return <th key={modelId} className="border p-3 text-center">{model.name}</th>;
-                          })}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {['background', 'trisomy', 'genes', 'rrid'].map(feature => (
-                          <tr key={feature}>
-                            <td className="border p-3 font-medium capitalize">
-                              {feature === 'rrid' ? 'RRID' : feature}
-                            </td>
-                            {selectedModels.map(modelId => {
-                              const model = animalModels.find(m => m.id === modelId);
-                              return (
-                                <td key={modelId} className="border p-3 text-center">
-                                  {feature === 'rrid' ? (
-                                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                                      {model[feature]}
-                                    </span>
-                                  ) : (
-                                    model[feature]
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
+                  <div className="mb-4">
+                    <div className="relative mb-3">
+                      <Search className="absolute left-3 top-3 text-slate-400" size={20} />
+                      <input
+                        type="text"
+                        placeholder="Search models by name, type, background, or RRID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <select value={modelTypeFilter} onChange={e => setModelTypeFilter(e.target.value)}
+                        className="text-sm p-2 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                        <option value="">All Types</option>
+                        {[...new Set(animalModels.map(m => m.type).filter(Boolean))].sort().map(t => (
+                          <option key={t} value={t}>{t}</option>
                         ))}
-                      </tbody>
-                    </table>
+                      </select>
+                      <select value={modelSpeciesFilter} onChange={e => setModelSpeciesFilter(e.target.value)}
+                        className="text-sm p-2 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                        <option value="">All Species</option>
+                        {[...new Set(animalModels.map(m => m.species).filter(Boolean))].sort().map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                      {(modelTypeFilter || modelSpeciesFilter) && (
+                        <button onClick={() => { setModelTypeFilter(''); setModelSpeciesFilter(''); }}
+                          className="text-sm px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg transition-colors">
+                          Clear filters
+                        </button>
+                      )}
+                      <span className="ml-auto text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+                        {filteredModels.length} of {animalModels.length} models
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {selectedModels.map(modelId => {
-                      const model = animalModels.find(m => m.id === modelId);
-                      return (
-                        <div key={modelId} className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <h3 className="font-semibold text-lg">{model.name}</h3>
-                            <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {filteredModels.map(model => (
+                      <div
+                        key={model.id}
+                        className={`rounded-2xl p-5 cursor-pointer transition-all ring-1
+                          ${selectedModels.includes(model.id)
+                            ? 'ring-teal-500 bg-teal-50/60 dark:bg-teal-950/30 shadow-md shadow-teal-500/10'
+                            : 'ring-slate-200 dark:ring-slate-800 bg-white dark:bg-slate-900/40 hover:ring-teal-300 dark:hover:ring-teal-700 hover:shadow-md'}`}
+                        onClick={() => handleModelSelect(model.id)}
+                      >
+                        <div className="flex justify-between items-start mb-3 gap-2">
+                          <h3 className="text-base font-semibold text-slate-900 dark:text-white">{model.name}</h3>
+                          <div className="flex gap-1.5 flex-wrap items-center">
+                            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">{model.species}</span>
+                            {model.type && <span className="text-[10px] bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full">{model.type}</span>}
+                            <a
+                              href={model.jackson_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink size={14} />
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 text-sm mb-3 text-slate-700 dark:text-slate-300">
+                          <div><span className="font-medium text-slate-500 dark:text-slate-400">Background:</span> {model.background}</div>
+                          <div><span className="font-medium text-slate-500 dark:text-slate-400">Trisomy:</span> {model.trisomy}</div>
+                          <div><span className="font-medium text-slate-500 dark:text-slate-400">Genes:</span> {model.genes}</div>
+                          <div>
+                            <span className="font-medium text-slate-500 dark:text-slate-400">RRID:</span>{' '}
+                            <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                               {model.rrid}
                             </span>
                           </div>
-                          
-                          {model.description && (
-                            <div className="mb-3">
-                              <h4 className="font-medium text-gray-700">Description</h4>
-                              <p className="text-sm text-gray-600 mt-1">{model.description}</p>
-                            </div>
-                          )}
-                          {model.key_papers && model.key_papers.length > 0 && (
-                            <div>
-                              <h4 className="font-medium text-blue-700">Key Papers</h4>
-                              <ul className="text-sm list-disc list-inside mt-1">
-                                {model.key_papers.map((p, idx) => (
-                                  <li key={idx}>
-                                    <a href={`https://pubmed.ncbi.nlm.nih.gov/${p.pmid}/`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                      {p.authors} ({p.year})
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
                         </div>
-                      );
-                    })}
+
+                        {model.description && (
+                          <div className="mb-2 text-xs text-slate-600 dark:text-slate-400 line-clamp-3">
+                            {model.description}
+                          </div>
+                        )}
+                        <div className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          Click to select for comparison
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {activeTab === 'design' && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold mb-4">Study Design Wizard</h2>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Research Question</label>
-                    <textarea
-                      value={designQuestion}
-                      onChange={e => setDesignQuestion(e.target.value)}
-                      placeholder="What is your main research question? e.g., 'Does compound X improve learning deficits in Ts65Dn mice?'"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      rows="3"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Animal Model</label>
-                      <select value={designModel} onChange={e => setDesignModel(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select model...</option>
-                        {animalModels.map(model => (
-                          <option key={model.id} value={model.id}>{model.name}</option>
-                        ))}
-                      </select>
+              {/* COMPARE TAB */}
+              {activeTab === 'compare' && (
+                <div className="bg-white dark:bg-slate-900/60 rounded-2xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 p-6">
+                  <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Model Comparison</h2>
+                  {selectedModels.length === 0 ? (
+                    <div className="text-center py-16 text-slate-500 dark:text-slate-400">
+                      <FileText size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+                      <p>Select models from the Animal Models tab to compare them here</p>
                     </div>
-
+                  ) : (
                     <div>
-                      <label className="block text-sm font-medium mb-2">Study Type</label>
-                      <select value={designStudyType} onChange={e => setDesignStudyType(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select type...</option>
-                        <option value="cognitive">Cognitive/Behavioral</option>
-                        <option value="molecular">Molecular/Biochemical</option>
-                        <option value="therapeutic">Therapeutic intervention</option>
-                        <option value="pathophysiology">Pathophysiology</option>
-                      </select>
-                    </div>
-                  </div>
+                      <div className="overflow-x-auto mb-6">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="bg-slate-50 dark:bg-slate-800/60">
+                              <th className="border border-slate-200 dark:border-slate-700 p-3 text-left">Feature</th>
+                              {selectedModels.map(modelId => {
+                                const model = animalModels.find(m => m.id === modelId);
+                                return <th key={modelId} className="border border-slate-200 dark:border-slate-700 p-3 text-center">{model.name}</th>;
+                              })}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {['background', 'trisomy', 'genes', 'rrid'].map(feature => (
+                              <tr key={feature}>
+                                <td className="border border-slate-200 dark:border-slate-700 p-3 font-medium capitalize">
+                                  {feature === 'rrid' ? 'RRID' : feature}
+                                </td>
+                                {selectedModels.map(modelId => {
+                                  const model = animalModels.find(m => m.id === modelId);
+                                  return (
+                                    <td key={modelId} className="border border-slate-200 dark:border-slate-700 p-3 text-center">
+                                      {feature === 'rrid' ? (
+                                        <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                          {model[feature]}
+                                        </span>
+                                      ) : (
+                                        model[feature]
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Sample Size per Group</label>
-                      <input
-                        type="number"
-                        value={designSampleSize}
-                        onChange={e => setDesignSampleSize(e.target.value)}
-                        placeholder="e.g., 10"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {selectedModels.map(modelId => {
+                          const model = animalModels.find(m => m.id === modelId);
+                          return (
+                            <div key={modelId} className="bg-slate-50 dark:bg-slate-800/40 ring-1 ring-slate-200 dark:ring-slate-700 rounded-2xl p-4">
+                              <div className="flex justify-between items-start mb-3">
+                                <h3 className="font-semibold text-lg text-slate-900 dark:text-white">{model.name}</h3>
+                                <span className="font-mono text-xs bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-700 px-2 py-1 rounded">
+                                  {model.rrid}
+                                </span>
+                              </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Study Duration</label>
-                      <input
-                        type="text"
-                        value={designDuration}
-                        onChange={e => setDesignDuration(e.target.value)}
-                        placeholder="e.g., 8 weeks"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
+                              {model.description && (
+                                <div className="mb-3">
+                                  <h4 className="font-medium text-slate-700 dark:text-slate-300">Description</h4>
+                                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{model.description}</p>
+                                </div>
+                              )}
+                              {model.key_papers && model.key_papers.length > 0 && (
+                                <div>
+                                  <h4 className="font-medium text-teal-700 dark:text-teal-300">Key Papers</h4>
+                                  <ul className="text-sm list-disc list-inside mt-1">
+                                    {model.key_papers.map((p, idx) => (
+                                      <li key={idx}>
+                                        <a href={`https://pubmed.ncbi.nlm.nih.gov/${p.pmid}/`} target="_blank" rel="noopener noreferrer" className="text-teal-600 dark:text-teal-400 hover:underline">
+                                          {p.authors} ({p.year})
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Primary Endpoint</label>
-                    <input
-                      type="text"
-                      value={designEndpoint}
-                      onChange={e => setDesignEndpoint(e.target.value)}
-                      placeholder="e.g., Performance in Morris Water Maze"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  )}
                 </div>
+              )}
 
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
-                    🧮 Sample Size Calculator
-                    <span className="text-xs font-normal text-blue-600">(two-group comparison, Cohen's d)</span>
-                  </h3>
+              {/* DESIGN TAB */}
+              {activeTab === 'design' && (
+                <div className="bg-white dark:bg-slate-900/60 rounded-2xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 p-6">
+                  <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Study Design Wizard</h2>
 
-                  {/* Effect size presets */}
-                  <div className="mb-4">
-                    <label className="block text-xs font-semibold text-blue-700 mb-2">Effect Size (Cohen's d)</label>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {[['0.2','Small'],['0.5','Medium'],['0.8','Large / DS Behavioural'],['1.0','DS Molecular']].map(([v, label]) => (
-                        <button key={v} onClick={() => setCalcEffectSize(v)}
-                          className={`text-xs px-2 py-1 rounded transition-colors ${calcEffectSize === v ? 'bg-blue-500 text-white' : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <input type="number" step="0.1" min="0.1" max="3" value={calcEffectSize}
-                      onChange={e => setCalcEffectSize(e.target.value)}
-                      className="w-full p-2 border border-blue-200 rounded text-sm bg-white" />
-                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Research Question</label>
+                        <textarea
+                          value={designQuestion}
+                          onChange={e => setDesignQuestion(e.target.value)}
+                          placeholder="What is your main research question? e.g., 'Does compound X improve learning deficits in Ts65Dn mice?'"
+                          className="w-full p-3 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none text-slate-900 dark:text-slate-100"
+                          rows="3"
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-blue-700 mb-1">Alpha (α)</label>
-                      <select value={calcAlpha} onChange={e => setCalcAlpha(e.target.value)}
-                        className="w-full p-2 border border-blue-200 rounded text-sm bg-white">
-                        <option value="0.05">0.05</option>
-                        <option value="0.01">0.01</option>
-                        <option value="0.10">0.10</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-blue-700 mb-1">Power (1−β)</label>
-                      <select value={calcPower} onChange={e => setCalcPower(e.target.value)}
-                        className="w-full p-2 border border-blue-200 rounded text-sm bg-white">
-                        <option value="0.80">0.80</option>
-                        <option value="0.90">0.90</option>
-                        <option value="0.95">0.95</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-blue-700 mb-1">Attrition: {calcAttrition}%</label>
-                      <input type="range" min="0" max="30" value={calcAttrition}
-                        onChange={e => setCalcAttrition(e.target.value)}
-                        className="w-full accent-blue-500 mt-2" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-blue-700 mb-1">Groups</label>
-                      <input type="number" min="2" max="6" value={calcGroups}
-                        onChange={e => setCalcGroups(e.target.value)}
-                        className="w-full p-2 border border-blue-200 rounded text-sm bg-white" />
-                    </div>
-                  </div>
-
-                  {(() => {
-                    const r = calculateSampleSize();
-                    return (
-                      <div className="bg-white rounded-lg p-3 border border-blue-200">
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div>
-                            <div className="text-2xl font-bold text-blue-700">{r.nRaw}</div>
-                            <div className="text-xs text-gray-500">n/group (raw)</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-orange-600">{r.nWithAttrition}</div>
-                            <div className="text-xs text-gray-500">n/group (+attrition)</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-green-700">{r.total}</div>
-                            <div className="text-xs text-gray-500">total animals</div>
-                          </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Animal Model</label>
+                          <select value={designModel} onChange={e => setDesignModel(e.target.value)} className="w-full p-3 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                            <option value="">Select model...</option>
+                            {animalModels.map(model => (
+                              <option key={model.id} value={model.id}>{model.name}</option>
+                            ))}
+                          </select>
                         </div>
-                        <div className="mt-2 text-xs text-gray-500 text-center border-t pt-2">
-                          DS guidelines: n≥10/group (behavioural) · n≥6/group (molecular)
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Study Type</label>
+                          <select value={designStudyType} onChange={e => setDesignStudyType(e.target.value)} className="w-full p-3 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                            <option value="">Select type...</option>
+                            <option value="cognitive">Cognitive/Behavioral</option>
+                            <option value="molecular">Molecular/Biochemical</option>
+                            <option value="therapeutic">Therapeutic intervention</option>
+                            <option value="pathophysiology">Pathophysiology</option>
+                          </select>
                         </div>
                       </div>
-                    );
-                  })()}
 
-                  {/* Export buttons */}
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      onClick={downloadStudyCSV}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
-                    >
-                      <FileDown size={15} />
-                      Download CSV
-                    </button>
-                    <button
-                      onClick={printStudyPDF}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
-                      <Download size={15} />
-                      Print / Save PDF
-                    </button>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Sample Size per Group</label>
+                          <input
+                            type="number"
+                            value={designSampleSize}
+                            onChange={e => setDesignSampleSize(e.target.value)}
+                            placeholder="e.g., 10"
+                            className="w-full p-3 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Study Duration</label>
+                          <input
+                            type="text"
+                            value={designDuration}
+                            onChange={e => setDesignDuration(e.target.value)}
+                            placeholder="e.g., 8 weeks"
+                            className="w-full p-3 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Primary Endpoint</label>
+                        <input
+                          type="text"
+                          value={designEndpoint}
+                          onChange={e => setDesignEndpoint(e.target.value)}
+                          placeholder="e.g., Performance in Morris Water Maze"
+                          className="w-full p-3 bg-white dark:bg-slate-800/60 ring-1 ring-slate-200 dark:ring-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-950/40 dark:via-cyan-950/40 dark:to-emerald-950/40 ring-1 ring-teal-100 dark:ring-teal-900/60 p-5 rounded-2xl">
+                      <h3 className="font-semibold text-teal-800 dark:text-teal-300 mb-4 flex items-center gap-2">
+                        🧮 Sample Size Calculator
+                        <span className="text-xs font-normal text-teal-600 dark:text-teal-400">(two-group, Cohen's d)</span>
+                      </h3>
+
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-teal-700 dark:text-teal-300 mb-2">Effect Size (Cohen's d)</label>
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {[['0.2','Small'],['0.5','Medium'],['0.8','Large / DS Behav.'],['1.0','DS Molecular']].map(([v, label]) => (
+                            <button key={v} onClick={() => setCalcEffectSize(v)}
+                              className={`text-xs px-2 py-1 rounded-lg transition-colors ${calcEffectSize === v ? 'bg-teal-600 text-white' : 'bg-white dark:bg-slate-800 ring-1 ring-teal-200 dark:ring-teal-800 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-700'}`}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        <input type="number" step="0.1" min="0.1" max="3" value={calcEffectSize}
+                          onChange={e => setCalcEffectSize(e.target.value)}
+                          className="w-full p-2 ring-1 ring-teal-200 dark:ring-teal-800 rounded-lg text-sm bg-white dark:bg-slate-800" />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-teal-700 dark:text-teal-300 mb-1">Alpha (α)</label>
+                          <select value={calcAlpha} onChange={e => setCalcAlpha(e.target.value)}
+                            className="w-full p-2 ring-1 ring-teal-200 dark:ring-teal-800 rounded-lg text-sm bg-white dark:bg-slate-800">
+                            <option value="0.05">0.05</option>
+                            <option value="0.01">0.01</option>
+                            <option value="0.10">0.10</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-teal-700 dark:text-teal-300 mb-1">Power (1−β)</label>
+                          <select value={calcPower} onChange={e => setCalcPower(e.target.value)}
+                            className="w-full p-2 ring-1 ring-teal-200 dark:ring-teal-800 rounded-lg text-sm bg-white dark:bg-slate-800">
+                            <option value="0.80">0.80</option>
+                            <option value="0.90">0.90</option>
+                            <option value="0.95">0.95</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-teal-700 dark:text-teal-300 mb-1">Attrition: {calcAttrition}%</label>
+                          <input type="range" min="0" max="30" value={calcAttrition}
+                            onChange={e => setCalcAttrition(e.target.value)}
+                            className="w-full accent-teal-600 mt-2" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-teal-700 dark:text-teal-300 mb-1">Groups</label>
+                          <input type="number" min="2" max="6" value={calcGroups}
+                            onChange={e => setCalcGroups(e.target.value)}
+                            className="w-full p-2 ring-1 ring-teal-200 dark:ring-teal-800 rounded-lg text-sm bg-white dark:bg-slate-800" />
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const r = calculateSampleSize();
+                        return (
+                          <div className="bg-white dark:bg-slate-900 rounded-xl p-3 ring-1 ring-teal-200 dark:ring-teal-800">
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div>
+                                <div className="text-2xl font-bold text-teal-700 dark:text-teal-300 tabular-nums">{r.nRaw}</div>
+                                <div className="text-[10px] uppercase tracking-wider text-slate-500">n/group (raw)</div>
+                              </div>
+                              <div>
+                                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{r.nWithAttrition}</div>
+                                <div className="text-[10px] uppercase tracking-wider text-slate-500">n/group (+attrition)</div>
+                              </div>
+                              <div>
+                                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{r.total}</div>
+                                <div className="text-[10px] uppercase tracking-wider text-slate-500">total animals</div>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-slate-500 text-center border-t border-slate-100 dark:border-slate-800 pt-2">
+                              DS guidelines: n≥10/group (behavioural) · n≥6/group (molecular)
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          onClick={downloadStudyCSV}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 ring-1 ring-teal-300 dark:ring-teal-700 text-teal-700 dark:text-teal-300 rounded-xl hover:bg-teal-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
+                        >
+                          <FileDown size={15} />
+                          CSV
+                        </button>
+                        <button
+                          onClick={printStudyPDF}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-xl hover:from-teal-700 hover:to-emerald-700 transition-colors text-sm font-medium shadow-md shadow-teal-500/30"
+                        >
+                          <Download size={15} />
+                          Print / PDF
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {activeTab === 'guidelines' && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h2 className="text-2xl font-semibold">ARRIVE Guidelines Checklist</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    DS-specific adaptation based on{' '}
-                    <a href="https://doi.org/10.1002/cpmo.79" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      Roper et al., 2020
-                    </a>
-                  </p>
-                </div>
-                <button
-                  onClick={exportChecklist}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  <Download size={16} />
-                  Export Checklist
-                </button>
-              </div>
+              {/* GUIDELINES TAB */}
+              {activeTab === 'guidelines' && (
+                <div className="bg-white dark:bg-slate-900/60 rounded-2xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 p-6">
+                  <div className="flex justify-between items-start mb-4 gap-3 flex-wrap">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">ARRIVE Guidelines Checklist</h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        DS-specific adaptation based on{' '}
+                        <a href="https://doi.org/10.1002/cpmo.79" target="_blank" rel="noopener noreferrer" className="text-teal-600 dark:text-teal-400 hover:underline">
+                          Roper et al., 2020
+                        </a>
+                      </p>
+                    </div>
+                    <button
+                      onClick={exportChecklist}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-xl hover:from-teal-700 hover:to-emerald-700 transition-colors text-sm font-medium shadow-md shadow-teal-500/30"
+                    >
+                      <Download size={16} />
+                      Export
+                    </button>
+                  </div>
 
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                <div className="text-sm">
-                  Completed: {guidelines.filter(g => g.checked).length}/{guidelines.length} items
+                  <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/40 dark:to-cyan-950/40 ring-1 ring-teal-100 dark:ring-teal-900/60 rounded-2xl">
+                    <div className="text-sm tabular-nums">
+                      Completed: {guidelines.filter(g => g.checked).length}/{guidelines.length} items
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-2 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-emerald-500 via-teal-500 to-teal-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${(guidelines.filter(g => g.checked).length / guidelines.length) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {guidelines.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`p-4 rounded-xl cursor-pointer transition-colors ring-1
+                          ${item.checked
+                            ? 'bg-emerald-50 dark:bg-emerald-950/30 ring-emerald-200 dark:ring-emerald-900'
+                            : 'bg-slate-50 dark:bg-slate-800/40 ring-slate-200 dark:ring-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/70'}`}
+                        onClick={() => handleGuidelineCheck(item.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <CheckSquare
+                            size={20}
+                            className={item.checked ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-xs uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-1">{item.category}</div>
+                            <div className="text-sm text-slate-700 dark:text-slate-200">{item.item}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(guidelines.filter(g => g.checked).length / guidelines.length) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                {guidelines.map((item) => (
-                  <div 
-                    key={item.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      item.checked ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                    }`}
-                    onClick={() => handleGuidelineCheck(item.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <CheckSquare 
-                        size={20} 
-                        className={item.checked ? 'text-green-600' : 'text-gray-400'}
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm text-blue-600 mb-1">{item.category}</div>
-                        <div className="text-sm text-gray-700 mb-2">{item.item}</div>
-                        {item.details && (
-                          <div className="text-xs text-gray-500 whitespace-pre-line">{item.details}</div>
+              )}
+
+              {/* ===== CHAT TAB ===== */}
+              {activeTab === 'chat' && (
+                <div className="h-full flex flex-col">
+                  {/* Slim toolbar */}
+                  <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800 px-4 md:px-8 py-2.5">
+                    <div className="max-w-4xl mx-auto flex flex-wrap items-center gap-2">
+                      {/* Model picker */}
+                      <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-full p-0.5 ring-1 ring-slate-200 dark:ring-slate-700">
+                        <button
+                          onClick={() => setSelectedModel('gpt-5.5')}
+                          className={`text-xs font-medium px-3 py-1 rounded-full transition-all ${selectedModel === 'gpt-5.5'
+                            ? 'bg-white dark:bg-slate-900 shadow-sm text-teal-700 dark:text-teal-300'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                        >
+                          GPT-5.5
+                        </button>
+                        <button
+                          onClick={() => setSelectedModel('gpt-5.4')}
+                          className={`text-xs font-medium px-3 py-1 rounded-full transition-all flex items-center gap-1 ${selectedModel === 'gpt-5.4'
+                            ? 'bg-white dark:bg-slate-900 shadow-sm text-amber-600 dark:text-amber-400'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                        >
+                          GPT-5.4 ⚡
+                        </button>
+                      </div>
+
+                      {/* Deep dive */}
+                      <button
+                        onClick={() => setDeepDive(v => !v)}
+                        title="Deep Dive: cite specific PMIDs (up to 5) to extract verbatim Results/Methods/Figures from PMC OA full text."
+                        className={`text-xs font-medium px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 ring-1
+                          ${deepDive
+                            ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white ring-transparent shadow-sm shadow-teal-500/30'
+                            : 'bg-slate-100 dark:bg-slate-800/80 ring-slate-200 dark:ring-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                      >
+                        <ZoomIn size={12} />
+                        Deep Dive {deepDive ? 'ON' : 'OFF'}
+                      </button>
+
+                      {deepDive && (
+                        <span className={`text-[11px] ${fulltextLoading ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-teal-600 dark:text-teal-400'}`}>
+                          {fulltextLoading
+                            ? '⏳ loading full-text index…'
+                            : fulltext && Object.keys(fulltext).length > 0
+                              ? `${Object.keys(fulltext).length} papers indexed`
+                              : 'cite PMIDs to extract'}
+                        </span>
+                      )}
+
+                      <div className="ml-auto flex items-center gap-1.5">
+                        {chatMessages.length > 0 && (
+                          <>
+                            <button
+                              onClick={downloadLastAnswer}
+                              className="flex items-center gap-1 px-2.5 py-1.5 ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs text-slate-700 dark:text-slate-300"
+                              title="Download last AI answer"
+                            >
+                              <FileDown size={13} />
+                              <span className="hidden sm:inline">Last</span>
+                            </button>
+                            <button
+                              onClick={downloadConversation}
+                              className="flex items-center gap-1 px-2.5 py-1.5 ring-1 ring-slate-200 dark:ring-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs text-slate-700 dark:text-slate-300"
+                              title="Download full chat"
+                            >
+                              <Download size={13} />
+                              <span className="hidden sm:inline">Export</span>
+                            </button>
+                            <button
+                              onClick={clearChat}
+                              className="flex items-center gap-1 px-2.5 py-1.5 ring-1 ring-rose-200 dark:ring-rose-900/60 text-rose-600 dark:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors text-xs"
+                              title="Clear chat"
+                            >
+                              <Trash2 size={13} />
+                              <span className="hidden sm:inline">Clear</span>
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {activeTab === 'chat' && (
-            <div className="bg-white rounded-xl shadow-lg h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] flex flex-col">
-              {/* Chat Header with Download Options */}
-              <div className="border-b p-3 md:p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm text-gray-600">💬 FlyerGPT Azure — {selectedModel === 'gpt-5.5' ? 'GPT-5.5' : 'GPT-5.4 (Fast)'}</p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                      <span className="text-xs text-gray-500">Model:</span>
-                      <button onClick={() => setSelectedModel('gpt-5.5')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.5' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.5</button>
-                      <button onClick={() => setSelectedModel('gpt-5.4')} className={`text-xs px-2 py-0.5 rounded transition-colors ${selectedModel === 'gpt-5.4' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>GPT-5.4 ⚡</button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                      <span className="text-xs text-gray-500">Context:</span>
-                      <button
-                        onClick={() => setDeepDive(v => !v)}
-                        title="Deep Dive: cite specific papers (by PMID) to extract their full abstract verbatim — results, methods, p-values, effect sizes. Up to 5 focus papers; background refs are compressed to save tokens."
-                        className={`text-xs px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
-                          deepDive ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                        }`}
-                      >
-                        <ZoomIn size={11} />
-                        Deep Dive {deepDive ? 'ON' : 'OFF'}
-                      </button>
-                      {deepDive && (
-                        <span className={`text-xs ${fulltextLoading ? 'text-amber-600 font-medium' : 'text-purple-500'}`}>
-                          {fulltextLoading
-                            ? '⏳ loading full text index… (~10 sec) — please wait before sending'
-                            : fulltext && Object.keys(fulltext).length > 0
-                              ? `full text: ${Object.keys(fulltext).length} papers · cite PMID → drill down`
-                              : 'cite a PMID → full extraction · up to 5 papers'}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">(AI can make mistakes - please verify critical information)</p>
-                    <p className="text-xs text-amber-600 mt-0.5">⚠️ Shared tool — please use queries thoughtfully.</p>
+                  {/* Messages area */}
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto">
+                    {chatMessages.length === 0 ? (
+                      <div className="min-h-full flex items-center justify-center p-4 md:p-8">
+                        <div className="max-w-2xl w-full text-center">
+                          {/* T21RS logo hero */}
+                          <div className="inline-flex items-center justify-center mb-6 relative">
+                            <div className="absolute inset-0 rounded-full bg-teal-400/30 dark:bg-teal-500/20 blur-2xl"></div>
+                            <div className="relative h-20 w-20 rounded-full bg-white dark:bg-slate-100 ring-1 ring-teal-200 dark:ring-teal-700 shadow-2xl shadow-teal-500/30 flex items-center justify-center overflow-hidden">
+                              <img src="/ds-research-tool-test/t21rs-logo.svg" alt="T21RS" className="h-18 w-18 object-contain" />
+                            </div>
+                          </div>
+                          <h3 className="text-2xl md:text-3xl font-bold mb-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-emerald-400 dark:to-emerald-400 bg-clip-text text-transparent">
+                            DS Research Assistant
+                          </h3>
+                          <p className="text-slate-600 dark:text-slate-400 mb-2">
+                            Ask anything about Down syndrome animal models, experimental design, or research guidance.
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-200 dark:ring-amber-900/60 rounded-lg px-3 py-2 mb-6 inline-block">
+                            ⚡ <strong>Tip:</strong> name the model, sex, age, and endpoint for best citation accuracy
+                          </p>
+
+                          <div className="text-left space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">💡 Try one of these</p>
+                            {examplePrompts.map((prompt, i) => (
+                              <button
+                                key={i}
+                                onClick={() => { setChatInput(prompt); chatInputRef.current?.focus(); }}
+                                className="w-full text-left p-3.5 bg-white dark:bg-slate-900/60 ring-1 ring-slate-200 dark:ring-slate-800 rounded-xl hover:ring-teal-300 dark:hover:ring-teal-700 hover:shadow-md transition-all text-sm text-slate-700 dark:text-slate-300 group"
+                              >
+                                <span className="text-teal-500 dark:text-teal-400 mr-2 group-hover:translate-x-0.5 inline-block transition-transform">→</span>
+                                {prompt}
+                              </button>
+                            ))}
+                          </div>
+
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-6">
+                            Citations grounded in the{' '}
+                            <a href="https://github.com/asathyanesan/ds-research-tool-test/blob/main/react-app/public/data/bibliography.json" target="_blank" rel="noreferrer" className="text-teal-500 hover:underline">DS Rodent Model Bibliography</a>
+                            {' '}— 1,200+ curated PubMed papers
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 space-y-6">
+                        {chatMessages
+                          .filter(msg => msg.role !== 'system')
+                          .map((msg, idx) => (
+                            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                              {msg.role === 'assistant' && (
+                                <div className="flex-shrink-0 h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-teal-600 flex items-center justify-center shadow-md shadow-teal-500/30">
+                                  <Sparkles size={16} className="text-white" />
+                                </div>
+                              )}
+                              <div className={`max-w-[85%] ${msg.role === 'user' ? 'order-first' : ''}`}>
+                                <div className={`px-4 py-3 rounded-2xl shadow-sm ${
+                                  msg.role === 'user'
+                                    ? 'bg-gradient-to-br from-teal-600 to-emerald-600 text-white rounded-tr-sm'
+                                    : 'bg-white dark:bg-slate-900/80 ring-1 ring-slate-200 dark:ring-slate-800 rounded-tl-sm'
+                                }`}>
+                                  {msg.role === 'user' ? (
+                                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">{msg.content}</p>
+                                  ) : (
+                                    msg.content
+                                      ? <MarkdownMessage content={msg.content} />
+                                      : <div className="flex items-center gap-1.5 py-1">
+                                          <span className="h-2 w-2 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '120ms' }}></span>
+                                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '240ms' }}></span>
+                                        </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        {isLoading && loadingStatus && (
+                          <div className="flex gap-3">
+                            <div className="flex-shrink-0 h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-teal-600 flex items-center justify-center">
+                              <Sparkles size={16} className="text-white animate-pulse" />
+                            </div>
+                            <div className="px-4 py-3 rounded-2xl bg-white dark:bg-slate-900/80 ring-1 ring-slate-200 dark:ring-slate-800 text-sm text-slate-600 dark:text-slate-300">
+                              {loadingStatus}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {chatMessages.length > 0 && (
-                    <div className="flex gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={downloadLastAnswer}
-                        className="flex items-center gap-1 px-2 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs"
-                        title="Download last AI answer"
-                      >
-                        <FileDown size={14} />
-                        <span className="hidden sm:inline">Last Answer</span>
-                      </button>
-                      <button
-                        onClick={downloadConversation}
-                        className="flex items-center gap-1 px-2 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs"
-                        title="Download entire conversation"
-                      >
-                        <Download size={14} />
-                        <span className="hidden sm:inline">Full Chat</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Chat Messages Area */}
-              <div ref={chatContainerRef} className="flex-1 p-3 md:p-6 overflow-y-auto space-y-4 bg-gray-50">
-                {chatMessages.length === 0 ? (
-                  <div className="text-center text-gray-500 mt-16">
-                    <BookOpen size={64} className="mx-auto mb-4 text-gray-300" />
-                    <p className="text-xl mb-4">Ask me about DS animal models, experimental design, or research guidance!</p>
-                    <div className="text-sm space-y-2 bg-white p-6 rounded-lg max-w-2xl mx-auto shadow-md">
-                      <p className="font-semibold text-gray-700 mb-3">💡 Example Questions:</p>
-                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2">⚡ <strong>For best results:</strong> name the model, sex, age, and endpoint — e.g. <em>"bone phenotype in male Tc1 mice aged 3 months"</em> not <em>"bone deficits in DS mice"</em></p>
-                      <div className="text-left space-y-2">
-                        <p>• "What bone and craniofacial phenotypes have been reported in male Tc1 and Ts65Dn mice? Tabulate with citations."</p>
-                        <p>• "Compare interferon-pathway immune phenotypes in Tc1 vs TcMAC21 — key differences and supporting papers?"</p>
-                        <p>• "What n per group is needed to detect Morris water maze deficits in male Ts65Dn mice aged 3–4 months?"</p>
-                        <p>• "What hippocampal LTP deficits have been shown in Dp1Tyb mice? Cite specific papers."</p>
-                        <p>• "Which DS mouse models show cardiac septal defects, and what are the key papers?"</p>
+                  {/* Input bar */}
+                  <div className="border-t border-slate-200/70 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl px-4 md:px-8 py-3">
+                    <div className="max-w-4xl mx-auto">
+                      <div className="relative flex items-end gap-2 bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-700 focus-within:ring-2 focus-within:ring-teal-500 rounded-2xl p-2 shadow-sm transition-all">
+                        <textarea
+                          ref={chatInputRef}
+                          rows={1}
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey && !isLoading && !fulltextLoading) {
+                              e.preventDefault();
+                              handleChat(chatInput);
+                            }
+                          }}
+                          placeholder={fulltextLoading ? 'Loading full-text index…' : 'Ask about DS models, design, RRIDs, sample sizes, citations…'}
+                          disabled={isLoading || fulltextLoading}
+                          className="flex-1 resize-none bg-transparent px-2 py-2 text-sm md:text-base focus:outline-none placeholder-slate-400 dark:placeholder-slate-500 text-slate-900 dark:text-slate-100 max-h-[200px]"
+                          style={{ minHeight: '2.5rem' }}
+                        />
+                        <button
+                          onClick={() => handleChat(chatInput)}
+                          disabled={isLoading || fulltextLoading || !chatInput.trim()}
+                          className={`flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+                            isLoading || fulltextLoading || !chatInput.trim()
+                              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                              : 'bg-gradient-to-br from-emerald-500 via-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/40 hover:scale-105 active:scale-95'
+                          }`}
+                          title="Send (Enter)"
+                        >
+                          {isLoading ? (
+                            <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Send size={16} />
+                          )}
+                        </button>
                       </div>
-                      <p className="text-xs text-gray-400 mt-4 pt-3 border-t text-center">
-                        Citations are grounded in the{' '}
-                        <a href="https://github.com/asathyanesan/ds-research-tool-test/blob/main/react-app/public/data/bibliography.json" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">DS Rodent Model Bibliography</a>
-                        {' '}— a curated PubMed collection of DS rodent model literature (1,200+ papers)
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 text-center px-2">
+                        AI can make mistakes — verify critical information. Enter to send, Shift+Enter for newline.
                       </p>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    {chatMessages
-                      .filter(msg => msg.role !== 'system')
-                      .map((msg, idx) => (
-                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[85%] p-4 rounded-lg shadow-md ${
-                            msg.role === 'user'
-                              ? 'bg-blue-500 text-white'
-                              : msg.isAiResponse
-                                ? 'bg-white text-gray-800 border-2 border-blue-200'
-                                : 'bg-white text-gray-800 border border-gray-200'
-                          }`}>
-                            {msg.role === 'assistant' && (
-                              <div className="text-xs text-blue-600 mb-2 flex items-center gap-1 font-semibold">
-                                🤖 AI Research Assistant
-                              </div>
-                            )}
-                            {msg.role === 'user' && (
-                              <div className="text-xs text-white/80 mb-2 flex items-center gap-1">
-                                👤 You
-                              </div>
-                            )}
-                            <MarkdownMessage content={msg.content} />
-                            
-                            {/* Display content warnings if present */}
-                            {msg.role === 'assistant' && msg.verification?.contentWarnings > 0 && msg.verification?.contentDetails && (
-                              <div className="mt-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg">
-                                <div className="flex items-start gap-2">
-                                  <span className="text-amber-600 text-xl">⚠</span>
-                                  <div className="flex-1">
-                                    <p className="font-semibold text-amber-800 mb-2">
-                                      Content Verification Warning
-                                    </p>
-                                    <p className="text-sm text-amber-700 mb-3">
-                                      {msg.verification.contentWarnings} citation(s) may not fully support the claims made. Review these carefully:
-                                    </p>
-                                    {msg.verification.contentDetails.map((detail, idx) => (
-                                      <div key={idx} className="mb-3 last:mb-0 pl-4 border-l-2 border-amber-300">
-                                        <p className="text-sm font-medium text-amber-900">
-                                          {detail.author}, {detail.year} (PMID {detail.pmid})
-                                        </p>
-                                        <p className="text-xs text-amber-700 mt-1">
-                                          Content match: <span className="font-semibold">{detail.contentScore}%</span>
-                                          {detail.semanticScore > 0 && (
-                                            <span className="ml-2 text-amber-600">
-                                              (semantic: {detail.semanticScore}%)
-                                            </span>
-                                          )}
-                                        </p>
-                                        <p className="text-xs text-amber-600 mt-1 italic">
-                                          {detail.warning}
-                                        </p>
-                                      </div>
-                                    ))}
-                                    <p className="text-xs text-amber-600 mt-3">
-                                      💡 Low content match indicates the cited paper may discuss different aspects than claimed. Verify citations independently.
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-white text-gray-800 p-4 rounded-lg shadow-md border border-blue-200">
-                          <div className="flex items-center gap-3">
-                            <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                            <span className="font-medium">{loadingStatus || 'AI is thinking...'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* Input Area */}
-              <div className="border-t p-3 md:p-4 bg-white">
-                <p className="text-xs text-amber-600 mb-1.5">⚡ Name specific model(s) for best citation accuracy — e.g. <em>"bone phenotype in Tc1 and Ts65Dn"</em> not <em>"bone phenotype in DS mice"</em></p>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isLoading && !fulltextLoading && handleChat(chatInput)}
-                    placeholder="Ask about DS models, experimental design, RRIDs, sample sizes, citations..."
-                    className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                    disabled={isLoading || fulltextLoading}
-                  />
-                  <button
-                    onClick={() => handleChat(chatInput)}
-                    disabled={isLoading || fulltextLoading || !chatInput.trim()}
-                    title={fulltextLoading ? 'Loading full text index — please wait…' : undefined}
-                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                      isLoading || fulltextLoading || !chatInput.trim()
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-500 text-white hover:bg-blue-600 shadow-md hover:shadow-lg'
-                    }`}
-                  >
-                    {isLoading ? 'Sending…' : fulltextLoading ? 'Loading…' : 'Send'}
-                  </button>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
             </div>
           </div>
 
-          {/* Footer */}
-          <footer className="bg-white border-t border-gray-200 p-4 text-center text-gray-500 text-sm">
-            <p>
-              DS Research Assistant • Open Source •{' '}
-              <a href="https://github.com/asathyanesan/ds-research-tool-test" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                GitHub
-              </a>
-            </p>
-            <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-              <span>Acknowledgement:</span>
-              <a
-                href="https://www.udayton.edu"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-blue-600 hover:underline font-medium"
-              >
-                <img
-                  src="/ds-research-tool-test/ud-logo.png"
-                  alt="University of Dayton"
-                  className="h-5 w-5 rounded-full"
-                />
-                University of Dayton
-              </a>
-              <span>for providing access to FlyerGPT Azure OpenAI</span>
-            </div>
-          </footer>
+          {/* Footer (hidden in chat to maximize chat space) */}
+          {activeTab !== 'chat' && (
+            <footer className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-t border-slate-200/70 dark:border-slate-800 px-4 py-3 text-center text-slate-500 dark:text-slate-400 text-xs">
+              <p>
+                DS Research Assistant • Open Source •{' '}
+                <a href="https://github.com/asathyanesan/ds-research-tool-test" target="_blank" rel="noopener noreferrer" className="text-teal-600 dark:text-teal-400 hover:underline">
+                  GitHub
+                </a>
+              </p>
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+                <span>Acknowledgement:</span>
+                <a
+                  href="https://www.udayton.edu"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-teal-600 dark:text-teal-400 hover:underline font-medium"
+                >
+                  <img
+                    src="/ds-research-tool-test/ud-logo.png"
+                    alt="University of Dayton"
+                    className="h-4 w-4 rounded-full"
+                  />
+                  University of Dayton
+                </a>
+                <span>for providing access to FlyerGPT Azure OpenAI</span>
+              </div>
+            </footer>
+          )}
         </main>
       </div>
     </div>
   );
 }
-
 
 export default App;
