@@ -247,17 +247,40 @@ function App() {
       'may','might','can','about','which','what','how','when','where','who',
       'their','they','them','these','those','its','into','than','then','there',
       'been','being','also','more','some','such','no','if','so','we','you']);
-    const words = query.toLowerCase()
+    // Acronym / synonym expansion so abbreviation-heavy queries still match.
+    // Short tokens (len <= 2) that are NOT in this map are dropped, as before.
+    const synonyms = {
+      chd: 'congenital heart defects',
+      cardiac: 'heart',
+      cardiogenesis: 'heart',
+      ds: 'down syndrome',
+      ts21: 'trisomy 21',
+      trisomy21: 'trisomy 21',
+      ad: 'alzheimer',
+    };
+    const words = [];
+    query.toLowerCase()
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter(w => w.length > 2 && !stopWords.has(w));
+      .forEach(w => {
+        if (!w || stopWords.has(w)) return;
+        if (w.length <= 2 && !synonyms[w]) return; // drop short non-acronyms
+        words.push(w);
+        if (synonyms[w]) {
+          synonyms[w].split(/\s+/).forEach(sw => {
+            if (sw.length > 2 && !stopWords.has(sw) && !words.includes(sw)) words.push(sw);
+          });
+        }
+      });
     const pinnedSet = new Set(pinPmids.map(String));
     const scored = pool.map(entry => {
       if (pinnedSet.has(String(entry.pmid))) return { entry, score: Infinity };
       if (!words.length) return { entry, score: 0 };
       const meshText = (entry.mesh || []).join(' ');
       const kwText = (entry.keywords || []).join(' ');
-      const text = ((entry.title || '') + ' ' + (entry.authors || '') + ' ' + (entry.abstract || '').slice(0, 600) + ' ' + meshText + ' ' + kwText).toLowerCase();
+      // Score over the FULL abstract (previously sliced to 600 chars, which
+      // buried phenotype terms that appear later in the abstract).
+      const text = ((entry.title || '') + ' ' + (entry.authors || '') + ' ' + (entry.abstract || '') + ' ' + meshText + ' ' + kwText).toLowerCase();
       const score = words.reduce((acc, w) => acc + (text.includes(w) ? 1 : 0), 0);
       return { entry, score };
     });
@@ -325,7 +348,10 @@ function App() {
         const isOa = oaSet.has(String(r.pmid));
         const oaTag = isOa && !withAbstracts ? ' [OA — full text available]' : '';
         const baseWithOa = oaTag ? base.replace(/( \[FOCUS\])?$/, `${oaTag}$1`) : base;
-        const snippetLen = withAbstracts ? 350 : (idx < 8 ? 350 : 0);
+        // Include a longer abstract snippet for the top refs so model
+        // associations and key terms buried past the first 350 chars (e.g.
+        // "Dp1Tyb" appearing at char ~514) are visible to the LLM.
+        const snippetLen = withAbstracts ? 350 : (idx < 8 ? 900 : 0);
         if (snippetLen > 0 && r.abstract) {
           const snippet = r.abstract.slice(0, snippetLen).trimEnd();
           return `${baseWithOa}\n   Abstract: ${snippet}${r.abstract.length > snippetLen ? '…' : ''}`;
@@ -390,12 +416,24 @@ NEVER attribute TcMAC21 findings to Tc1 or vice versa. When a user mentions "Tc1
 6. When uncertain about a factual claim, say: "Evidence suggests…" or "This has not been definitively established in the DS literature provided."
 7. IMPORTANT — abstracts: When a bibliography entry above includes an "Abstract:" field, that text IS the paper's content. Use it directly to answer questions about what that paper found or reported. NEVER say "I cannot access PubMed" or "I cannot check the abstract" — if the abstract is in the entry above, you already have it. When asked to "look deeper" into a paper, quote the most relevant sentences verbatim from what is available, extract any numerical values (n, p-values, effect sizes, measurements), then close with: *— tolle, lege — follow the [[PMID:XXXXXXX]] link above for the full text.*
 
-## BEST MODEL DEFLECTION — HARD RULE:
-If a user asks "which model is best", "what model should I use", "which model do you recommend", "best DS model", or any variant seeking a single top-ranked model, do NOT name one model as superior. Instead:
+## BEST-MODEL QUESTIONS — TWO-TIER RULE:
+If a user asks "which model is best", "what model should I use", "which model do you recommend", "best DS model", "best suited for…", or any variant seeking a model recommendation, apply the tier that matches the query:
+
+**Tier 1 — NO phenotype, domain, or endpoint is specified** (e.g. "which DS model is best?", "what model should I use?"):
+Do NOT name one model as superior. Instead:
 1. State warmly that every DS model has unique utility, strengths, and weaknesses — and that each has contributed distinct and valuable knowledge to the DS biomedical field.
 2. Redirect constructively: ask what the specific research question, phenotype of interest, age group, and primary endpoint are.
 3. Note briefly that the right choice depends on gene coverage (partial vs full trisomy), mosaicism, available phenotypic data, colony background, and translational concordance for the intended endpoint.
 4. You may summarise 2–3 model categories and their trade-offs, but do not rank them.
+
+**Tier 2 — A phenotype, domain, or endpoint IS specified** (e.g. "best model for congenital heart defects", "which model for studying Alzheimer's in DS", "best model for interferon hyperactivity", "best suited for studying CHD"):
+You MUST deliver a substantive, evidence-cited comparative survey. Do NOT deflect or only ask clarifying questions. Instead:
+1. State in ONE sentence that no single model is universally "best" and the right choice depends on the specific phenotype — then move directly to the evidence.
+2. Enumerate EVERY model in the curated literature above that has direct OR indirect evidence on the specified phenotype. For each model, cite the specific paper(s) by PMID from the citation pool and summarise what that paper found for this phenotype (e.g. "Dp1Tyb — Lana-Elola et al. (2024) [PMID:38266108] showed increased DYRK1A dosage causes congenital heart defects; Lana-Elola et al. (2016) [PMID:26765563] used a Dp1Tyb-derived mapping panel to dissect CHD loci").
+3. Distinguish models with DIRECT phenotype evidence (the phenotype was measured/studied) from models with INDIRECT evidence (broader phenotyping that incidentally includes it).
+4. Cover causal / mechanistic evidence (gene-dosage mapping, single-gene tests, pathway dissection) as well as descriptive phenotyping. Mechanistic papers are often the MOST relevant for a phenotype-focused question and MUST NOT be omitted just because they focus on mechanism rather than a broad model phenotype description.
+5. Conclude with a concise trade-off summary across the models covered (gene coverage, mosaicism, availability, strength of evidence for THIS phenotype), but do NOT declare a single overall winner. You MAY note which models have the most direct or strongest evidence for the specific phenotype.
+6. Cite ONLY papers from the curated DS bibliography above. If a model has no bibliography evidence for the specified phenotype, say so explicitly rather than silently omitting the model.
 
 ${!withAbstracts ? `## DEEP DIVE SUGGESTION RULE:
 When the user asks about a specific paper or a small group (1–5 papers by PMID or name), check whether any of those papers show [OA — full text available] in the citation pool above. If so, after delivering your abstract-level response, append a brief suggestion on a new line:

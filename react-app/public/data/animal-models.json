@@ -694,7 +694,12 @@
     "publication": "Lana-Elola E, et al., 2016",
     "pubLink": "https://pubmed.ncbi.nlm.nih.gov/26765563/",
     "references": [],
-    "key_papers": []
+    "key_papers": [
+      {"title": "Genetic dissection of Down syndrome-associated congenital heart defects using a new mouse mapping panel", "authors": "Lana-Elola E et al.", "year": "2016", "pmid": "26765563"},
+      {"title": "Comprehensive phenotypic analysis of the Dp1Tyb mouse strain reveals a broad range of Down syndrome-related phenotypes", "authors": "Lana-Elola E et al.", "year": "2021", "pmid": "34477842"},
+      {"title": "Increased dosage of DYRK1A leads to congenital heart defects in a mouse model of Down syndrome", "authors": "Lana-Elola E et al.", "year": "2024", "pmid": "38266108"},
+      {"title": "Investigating brain alterations in the Dp1Tyb mouse model of Down syndrome", "authors": "Serrano ME et al.", "year": "2023", "pmid": "38317803"}
+    ]
   },
   {
     "id": "dp2tyb",
