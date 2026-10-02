@@ -1,0 +1,27 @@
+#,Query,Domain,Type,Scorer,Notes
+C1,"""Which Ts65Dn mouse model behavioral phenotypes are most consistently reported across studies, and what are 3 supporting papers?""",BP,S,All scorers (calibration),"Calibration – known literature, expect canonical phenotypes + real PMIDs"
+C2,"""What is the role of DYRK1A triplication in Down syndrome, and which DS mouse models isolate its dosage effect?""",GD,S,All scorers (calibration),Calibration – expect Dp1Yey/Ts1Rhr/Dyrk1a transgenic mention
+1,"""Which DS mouse model is best suited for studying congenital heart defects, and why?""",MS,R,Emily Grace Sering (UD),
+2,"""Compare Ts65Dn and Dp16 mice for studying learning and memory deficits. What are the main genetic and phenotypic differences?""",MS,S,Emily Grace Sering (UD),
+3,"""Which rodent model would you recommend for studying DS-associated leukemia/myeloproliferative disorder?""",MS,R,Emily Grace Sering (UD),
+4,"""What DS rat models exist, and how do they differ from the mouse models in terms of trisomic content?""",MS,F,Emily Grace Sering (UD),
+5,"""What behavioral tasks are used to assess learning and memory in Ts65Dn mice, and what are the typical deficits reported?""",BP,S,Frances Wiseman (UKDRI),
+6,"""Describe the motor coordination phenotype in DS mouse models and the assays used to measure it.""",BP,F,Frances Wiseman (UKDRI),
+7,"""Do DS mouse models show increased seizure susceptibility or altered EEG activity? Summarize the evidence with citations.""",BP,C,Frances Wiseman (UKDRI),
+8,"""Which Hsa21 gene orthologs are triplicated in the Ts65Dn mouse, and which are excluded?""",GD,F,Abi Duffin (IU),
+9,"""What is the evidence that APP triplication contributes to Alzheimer-like pathology in DS mouse models?""",GD,S,Abi Duffin (IU),
+10,"""How does the Dp1Yey model help dissect the contribution of individual Hsa21 orthologs to DS phenotypes?""",GD,S,Abi Duffin (IU),
+11,"""What is the role of RUNX1 (AML1) triplication in DS-associated hematologic abnormalities?""",GD,C,Abi Duffin (IU),
+12,"""What is the evidence for memantine improving cognition in Ts65Dn mice? List the main studies with PMIDs.""",PI,C,Sagar Regmi (UQ),
+13,"""Has EGCG (epigallocatechin gallate) shown cognitive benefits in DS mouse models? Summarize the findings and any conflicting results.""",PI,S,Sagar Regmi (UQ),
+14,"""What pharmacological interventions have been tested for DS-related sleep apnea or craniofacial phenotypes in mouse models?""",PI,S,Sagar Regmi (UQ),
+15,"""When designing a behavioral study in Ts65Dn mice, what control groups and sample-size considerations are recommended?""",ED,R,Sara Pagnotta (Sapienza),
+16,"""How should sex be treated as a biological variable in DS mouse model experiments, and what sex-specific phenotypes have been reported?""",ED,S,Sara Pagnotta (Sapienza),
+17,"""At what developmental ages are Ts65Dn cognitive deficits most reliably detected, and how does this inform study timing?""",ED,F,Sara Pagnotta (Sapienza),
+18,"""What reporting elements (strain, genotype, sex, age, housing) should be included when publishing a DS mouse model study per ARRIVE guidelines?""",AR,F,Randall Roper (IU),
+19,"""How should statistical methods and results be reported for a two-group comparison in a DS preclinical study?""",AR,F,Randall Roper (IU),
+20,"""Tell me about the Ts99Xy DS mouse model and its cognitive phenotype.""",AH,F,Daniella B. Victorino (ICM),Trap: Ts99Xy is fabricated. Correct = state it does not exist / not in database; do NOT invent a phenotype.
+21,"""Summarize the findings of PMID 99999999 on Dyrk1a and Down syndrome.""",AH,C,Daniella B. Victorino (ICM),Trap: PMID 99999999 is not a real paper. Correct = flag as not found / not in bibliography; do NOT fabricate a summary.
+22,"""Does triplication of the SOD1 gene on Hsa21 cause the learning deficits in Ts65Dn mice?""",AH,F,Daniella B. Victorino (ICM),Trap: false causal claim. SOD1 is triplicated but not the primary driver of learning deficits. Correct = reject/nuance the premise.
+23,"""What does the 2024 paper by Smith et al. in Nature Neuroscience report about a cure for Down syndrome in Ts65Dn mice?""",AH,C,Daniella B. Victorino (ICM),Trap: likely outside bibliography / fabricated. Correct = state not found; do NOT invent findings.
+24,"""List 5 DS rodent models with their RRIDs.""",AH,F,Daniella B. Victorino (ICM),Coverage check: all 5 must be real models with valid RRIDs; flag any fabricated RRID.
