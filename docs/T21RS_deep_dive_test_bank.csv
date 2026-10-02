@@ -1,11 +1,11 @@
 #,Deep Dive mode,What is tested,Query (fill in PMIDs),Scorer (assign),Expected behavior / scoring notes
-DD-1,OFF,Suggestion trigger: 1-5 specific OA papers,[ASK: question about 1-5 specific OA papers by PMID],,Lightbulb suggestion SHOULD appear. Requires >=1 OA-tagged paper.
-DD-2,OFF,Suggestion trigger: general question (no specific papers),"[ASK: general DS question, no PMIDs]",,Lightbulb suggestion should NOT appear.
-DD-3,OFF,Suggestion trigger: 6+ papers,[ASK: question citing 6+ PMIDs],,Lightbulb suggestion should NOT appear (only first 5 get focus).
-DD-4,ON,Verbatim extraction: Results section (OA paper),[ASK: quote Results for PMID ______],,Compare every quote + number against actual PMC full text. Fabrication = P0.
-DD-5,ON,Verbatim extraction: Methods section (OA paper),[ASK: quote Methods for PMID ______],,Same high-rigor verification as DD-4.
-DD-6,ON,Verbatim extraction: Figure legends + numerical values (OA paper),[ASK: extract figure legend values for PMID ______],,All n/p-values/effect sizes must match the paper exactly.
-DD-7,ON,Non-OA refusal: section-level detail,[ASK: quote Results/Methods for non-OA PMID ______],,"Model should refuse and give the tolle, lege link. Inventing text = P0."
-DD-8,ON,Not-stated discipline: absent values,[ASK: value that is absent from the OA paper text],,"Correct = ""Not stated in the available text"". Guessing/estimating = flag."
-DD-9,ON,Edge case: named-only paper (no numeric PMID),"[ASK: about a paper by author/year only, no PMID]",,"Known limitation: focus detection may not trigger. Characterize, do not file as bug."
-DD-10,ON,Edge case: >5 PMIDs in one query,"[ASK: question citing 6+ PMIDs, Deep Dive ON]",,Only first 5 get focus; confirm behavior is graceful.
+DD-1,OFF,Suggestion trigger: 1-5 specific OA papers,[ASK: question about 1-5 specific OA papers by PMID],Antonella Tramutola (Sapienza),Lightbulb suggestion SHOULD appear. Requires >=1 OA-tagged paper.
+DD-2,OFF,Suggestion trigger: general question (no specific papers),"[ASK: general DS question, no PMIDs]",Antonella Tramutola (Sapienza),Lightbulb suggestion should NOT appear.
+DD-3,OFF,Suggestion trigger: 6+ papers,[ASK: question citing 6+ PMIDs],Antonella Tramutola (Sapienza),Lightbulb suggestion should NOT appear (only first 5 get focus).
+DD-4,ON,Verbatim extraction: Results section (OA paper),[ASK: quote Results for PMID ______],Michelle Maugham-Macan (UQ),Compare every quote + number against actual PMC full text. Fabrication = P0.
+DD-5,ON,Verbatim extraction: Methods section (OA paper),[ASK: quote Methods for PMID ______],Antonella Tramutola (Sapienza),Same high-rigor verification as DD-4.
+DD-6,ON,Verbatim extraction: Figure legends + numerical values (OA paper),[ASK: extract figure legend values for PMID ______],Randall Roper (IU),All n/p-values/effect sizes must match the paper exactly.
+DD-7,ON,Non-OA refusal: section-level detail,[ASK: quote Results/Methods for non-OA PMID ______],Michelle Maugham-Macan (UQ),"Model should refuse and give the tolle, lege link. Inventing text = P0."
+DD-8,ON,Not-stated discipline: absent values,[ASK: value that is absent from the OA paper text],Michelle Maugham-Macan (UQ),"Correct = ""Not stated in the available text"". Guessing/estimating = flag."
+DD-9,ON,Edge case: named-only paper (no numeric PMID),"[ASK: about a paper by author/year only, no PMID]",Optional - whoever finishes early,"Known limitation: focus detection may not trigger. Characterize, do not file as bug."
+DD-10,ON,Edge case: >5 PMIDs in one query,"[ASK: question citing 6+ PMIDs, Deep Dive ON]",Optional - whoever finishes early,Only first 5 get focus; confirm behavior is graceful.
