@@ -46,17 +46,28 @@ export default {
       await env.QUERY_COUNTER.put(monthKey, String(count + 1), { expirationTtl: 35 * 24 * 60 * 60 });
     }
 
-    const upstreamHeaders = new Headers();
-    upstreamHeaders.set('Content-Type', 'application/json');
-    upstreamHeaders.set('api-key', env.FLYER_API_KEY_2);
+    // Primary key first; backup (separate subscription) only when quota/limit is hit
+    const keys = [env.FLYER_API_KEY_2, env.FLYER_API_KEY_3].filter(Boolean);
+    const body = await request.arrayBuffer();
+
+    const callUpstream = (key) => fetch(`${FLYER_BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': key },
+      body,
+    });
 
     let upstream;
     try {
-      upstream = await fetch(`${FLYER_BASE}${path}`, {
-        method: 'POST',
-        headers: upstreamHeaders,
-        body: request.body,
-      });
+      for (let i = 0; i < keys.length; i++) {
+        upstream = await callUpstream(keys[i]);
+        if (i === keys.length - 1) break;
+        let limited = upstream.status === 429;
+        if (upstream.status === 403) {
+          const text = await upstream.clone().text().catch(() => '');
+          limited = /quota/i.test(text);
+        }
+        if (!limited) break;
+      }
     } catch (err) {
       return new Response(JSON.stringify({ error: { message: 'Upstream unreachable' } }), {
         status: 502,

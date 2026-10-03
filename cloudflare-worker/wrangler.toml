@@ -2,8 +2,9 @@ name = "flyer-cors-proxy"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
-# FLYER_API_KEY must be set as a secret (never in this file):
-#   wrangler secret put FLYER_API_KEY
+# Secrets (never in this file):
+#   wrangler secret put FLYER_API_KEY_2   # primary
+#   wrangler secret put FLYER_API_KEY_3   # backup, used on 429 / quota-exceeded
 
 # KV namespace for monthly query counter
 # To create: npx wrangler kv namespace create QUERY_COUNTER
