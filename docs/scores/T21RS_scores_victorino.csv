@@ -1,0 +1,10 @@
+query_id,track,domain,type,scorer,date_scored,factual_accuracy,citation_validity,completeness,ds_relevance,hallucination_flag,notes,dd_suggestion_correct,dd_verbatim_fidelity,dd_numerical_accuracy,dd_source_labeling,dd_completeness,dd_notstated_discipline,dd_nonoa_refusal,dd_notes
+C1,Calibration,BP,S,Daniella B. Victorino,,,,,,,,,,,,,,,
+C2,Calibration,GD,S,Daniella B. Victorino,,,,,,,,,,,,,,,
+20,A,AH,F,Daniella B. Victorino,,,,,,,,,,,,,,,
+21,A,AH,C,Daniella B. Victorino,,,,,,,,,,,,,,,
+22,A,AH,F,Daniella B. Victorino,,,,,,,,,,,,,,,
+23,A,AH,C,Daniella B. Victorino,,,,,,,,,,,,,,,
+24,A,AH,F,Daniella B. Victorino,,,,,,,,,,,,,,,
+WildQ1,B,,,Daniella B. Victorino,,,,,,,,,,,,,,,
+WildQ2,B,,,Daniella B. Victorino,,,,,,,,,,,,,,,

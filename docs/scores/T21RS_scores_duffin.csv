@@ -1,0 +1,9 @@
+query_id,track,domain,type,scorer,date_scored,factual_accuracy,citation_validity,completeness,ds_relevance,hallucination_flag,notes,dd_suggestion_correct,dd_verbatim_fidelity,dd_numerical_accuracy,dd_source_labeling,dd_completeness,dd_notstated_discipline,dd_nonoa_refusal,dd_notes
+C1,Calibration,BP,S,Abi Duffin,,,,,,,,,,,,,,,
+C2,Calibration,GD,S,Abi Duffin,,,,,,,,,,,,,,,
+8,A,GD,F,Abi Duffin,,,,,,,,,,,,,,,
+9,A,GD,S,Abi Duffin,,,,,,,,,,,,,,,
+10,A,GD,S,Abi Duffin,,,,,,,,,,,,,,,
+11,A,GD,C,Abi Duffin,,,,,,,,,,,,,,,
+WildQ1,B,,,Abi Duffin,,,,,,,,,,,,,,,
+WildQ2,B,,,Abi Duffin,,,,,,,,,,,,,,,

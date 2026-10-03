@@ -1,0 +1,8 @@
+query_id,track,domain,type,scorer,date_scored,factual_accuracy,citation_validity,completeness,ds_relevance,hallucination_flag,notes,dd_suggestion_correct,dd_verbatim_fidelity,dd_numerical_accuracy,dd_source_labeling,dd_completeness,dd_notstated_discipline,dd_nonoa_refusal,dd_notes
+C1,Calibration,BP,S,Randall Roper,,,,,,,,,,,,,,,
+C2,Calibration,GD,S,Randall Roper,,,,,,,,,,,,,,,
+18,A,AR,F,Randall Roper,,,,,,,,,,,,,,,
+19,A,AR,F,Randall Roper,,,,,,,,,,,,,,,
+DD-6,C,Deep Dive,ON,Randall Roper,,,,,,,Verbatim extraction: Figure legends + numerical values (OA paper),,,,,,,,
+WildQ1,B,,,Randall Roper,,,,,,,,,,,,,,,
+WildQ2,B,,,Randall Roper,,,,,,,,,,,,,,,
