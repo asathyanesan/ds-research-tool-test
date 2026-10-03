@@ -47,19 +47,37 @@ export default {
     }
 
     // Primary key first; backup (separate subscription) only when quota/limit is hit
-    const keys = [env.FLYER_API_KEY_2, env.FLYER_API_KEY_3].filter(Boolean);
+    // Backup subscription only exposes gpt-5.6-terra, so the deployment is rewritten for it
+    const keys = [
+      { key: env.FLYER_API_KEY_2 },
+      { key: env.FLYER_API_KEY_3, deployment: 'gpt-5.6-terra' },
+    ].filter((k) => k.key);
     const body = await request.arrayBuffer();
 
-    const callUpstream = (key) => fetch(`${FLYER_BASE}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': key },
-      body,
-    });
+    const callUpstream = ({ key, deployment }) => {
+      let upstreamPath = path;
+      let upstreamBody = body;
+      if (deployment) {
+        upstreamPath = path.replace(/\/deployments\/[^/]+/, `/deployments/${deployment}`);
+        // gpt-5.6-terra only accepts the default temperature
+        try {
+          const json = JSON.parse(new TextDecoder().decode(body));
+          delete json.temperature;
+          upstreamBody = JSON.stringify(json);
+        } catch { /* send body unchanged */ }
+      }
+      return fetch(`${FLYER_BASE}${upstreamPath}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'api-key': key },
+        body: upstreamBody,
+      });
+    };
 
     let upstream;
     try {
       for (let i = 0; i < keys.length; i++) {
         upstream = await callUpstream(keys[i]);
+        console.log(`key slot ${i + 1} -> ${upstream.status}`);
         if (i === keys.length - 1) break;
         let limited = upstream.status === 429;
         if (upstream.status === 403) {
