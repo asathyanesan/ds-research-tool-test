@@ -1,8 +1,8 @@
 query_id,track,domain,type,scorer,date_scored,factual_accuracy,citation_validity,completeness,ds_relevance,hallucination_flag,notes,dd_suggestion_correct,dd_verbatim_fidelity,dd_numerical_accuracy,dd_source_labeling,dd_completeness,dd_notstated_discipline,dd_nonoa_refusal,dd_notes
 C1,Calibration,BP,S,Michelle Maugham-Macan,,,,,,,,,,,,,,,
 C2,Calibration,GD,S,Michelle Maugham-Macan,,,,,,,,,,,,,,,
-DD-4,C,Deep Dive,ON,Michelle Maugham-Macan,,,,,,,Verbatim extraction: Results section (OA paper),,,,,,,,
-DD-7,C,Deep Dive,ON,Michelle Maugham-Macan,,,,,,,Non-OA refusal: section-level detail,,,,,,,,
-DD-8,C,Deep Dive,ON,Michelle Maugham-Macan,,,,,,,Not-stated discipline: absent values,,,,,,,,
+DD-4,C,Deep Dive,ON,Michelle Maugham-Macan,,,,,,,"Verbatim extraction: Results section (OA paper) - PMID 38336158, Compromised femoral and lumbovertebral bone in the Dp(16)1Yey Down syndrome mouse model, Bone 2024",,,,,,,,
+DD-7,C,Deep Dive,ON,Michelle Maugham-Macan,,,,,,,"Non-OA refusal: section-level detail - PMID 26206885, Rescue of the abnormal skeletal phenotype in Ts65Dn Down syndrome mice using genetic and therapeutic modulation of trisomic Dyrk1a, Hum Mol Genet 2015",,,,,,,,
+DD-8,C,Deep Dive,ON,Michelle Maugham-Macan,,,,,,,"Not-stated discipline: absent values - PMID 38336158 (e.g., serum osteocalcin/CTX-1, not measured in this study)",,,,,,,,
 WildQ1,B,,,Michelle Maugham-Macan,,,,,,,,,,,,,,,
 WildQ2,B,,,Michelle Maugham-Macan,,,,,,,,,,,,,,,
